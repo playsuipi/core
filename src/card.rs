@@ -129,10 +129,11 @@ impl fmt::Display for Value {
 // == Suipi Cards ==
 // =================
 
+/// Suipi playing card
 #[derive(Debug, PartialEq, Eq)]
 pub struct Card {
-    value: Value,
-    suit: Suit,
+    pub value: Value,
+    pub suit: Suit,
 }
 
 impl Card {
