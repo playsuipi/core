@@ -143,7 +143,7 @@ impl Card {
     }
 
     /// Get the card id
-    pub fn to_id(&self) -> u8 {
+    pub fn id(&self) -> u8 {
         VALUE_COUNT * (self.suit as u8) + (self.value as u8)
     }
 
@@ -191,19 +191,19 @@ mod tests {
     fn test_card_to_id() {
         // King of Clubs is id 1
         let id: u8 = 1; // 13 * 0 + 1
-        assert_eq!(Card::new(Value::King, Suit::Clubs).to_id(), id);
+        assert_eq!(Card::new(Value::King, Suit::Clubs).id(), id);
 
         // Five of Diamonds is id 22
         let id: u8 = 22; // 13 * 1 + 9
-        assert_eq!(Card::new(Value::Five, Suit::Diamonds).to_id(), id);
+        assert_eq!(Card::new(Value::Five, Suit::Diamonds).id(), id);
 
         // Eight of Hearts is id 32
         let id: u8 = 32; // 13 * 2 + 6
-        assert_eq!(Card::new(Value::Eight, Suit::Hearts).to_id(), id);
+        assert_eq!(Card::new(Value::Eight, Suit::Hearts).id(), id);
 
         // Jack of Spades is id 1
         let id: u8 = 42; // 13 * 3 + 3
-        assert_eq!(Card::new(Value::Jack, Suit::Spades).to_id(), id);
+        assert_eq!(Card::new(Value::Jack, Suit::Spades).id(), id);
     }
 
     #[test]
