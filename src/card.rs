@@ -37,7 +37,7 @@ impl Suit {
     }
 
     /// Get a suit from its id
-    fn from_id(id: u8) -> Result<Suit, IdError> {
+    pub fn from_id(id: u8) -> Result<Suit, IdError> {
         match id {
             0 => Ok(Suit::Clubs),
             1 => Ok(Suit::Diamonds),
@@ -45,6 +45,11 @@ impl Suit {
             3 => Ok(Suit::Spades),
             _ => Err(IdError::InvalidSuitId),
         }
+    }
+
+    /// Get the suit id
+    pub fn id(self) -> u8 {
+        self as u8
     }
 }
 
@@ -63,18 +68,18 @@ impl fmt::Display for Suit {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Value {
     Ace,
-    King,
-    Queen,
-    Jack,
-    Ten,
-    Nine,
-    Eight,
-    Seven,
-    Six,
-    Five,
-    Four,
-    Three,
     Two,
+    Three,
+    Four,
+    Five,
+    Six,
+    Seven,
+    Eight,
+    Nine,
+    Ten,
+    Jack,
+    Queen,
+    King,
 }
 
 impl Value {
@@ -82,39 +87,44 @@ impl Value {
     fn as_string(&self) -> &str {
         match self {
             Value::Ace => "A",
-            Value::King => "K",
-            Value::Queen => "Q",
-            Value::Jack => "J",
-            Value::Ten => "10",
-            Value::Nine => "9",
-            Value::Eight => "8",
-            Value::Seven => "7",
-            Value::Six => "6",
-            Value::Five => "5",
-            Value::Four => "4",
-            Value::Three => "3",
             Value::Two => "2",
+            Value::Three => "3",
+            Value::Four => "4",
+            Value::Five => "5",
+            Value::Six => "6",
+            Value::Seven => "7",
+            Value::Eight => "8",
+            Value::Nine => "9",
+            Value::Ten => "10",
+            Value::Jack => "J",
+            Value::Queen => "Q",
+            Value::King => "K",
         }
     }
 
     /// Get a value from its id
-    fn from_id(id: u8) -> Result<Value, IdError> {
+    pub fn from_id(id: u8) -> Result<Value, IdError> {
         match id {
             0 => Ok(Value::Ace),
-            1 => Ok(Value::King),
-            2 => Ok(Value::Queen),
-            3 => Ok(Value::Jack),
-            4 => Ok(Value::Ten),
-            5 => Ok(Value::Nine),
-            6 => Ok(Value::Eight),
-            7 => Ok(Value::Seven),
-            8 => Ok(Value::Six),
-            9 => Ok(Value::Five),
-            10 => Ok(Value::Four),
-            11 => Ok(Value::Three),
-            12 => Ok(Value::Two),
+            1 => Ok(Value::Two),
+            2 => Ok(Value::Three),
+            3 => Ok(Value::Four),
+            4 => Ok(Value::Five),
+            5 => Ok(Value::Six),
+            6 => Ok(Value::Seven),
+            7 => Ok(Value::Eight),
+            8 => Ok(Value::Nine),
+            9 => Ok(Value::Ten),
+            10 => Ok(Value::Jack),
+            11 => Ok(Value::Queen),
+            12 => Ok(Value::King),
             _ => Err(IdError::InvalidValueId),
         }
+    }
+
+    /// Get the value id
+    pub fn id(self) -> u8 {
+        self as u8
     }
 }
 
@@ -130,7 +140,7 @@ impl fmt::Display for Value {
 // =================
 
 /// Suipi playing card
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Card {
     pub value: Value,
     pub suit: Suit,
@@ -142,14 +152,14 @@ impl Card {
         Card { value: v, suit: s }
     }
 
-    /// Get the card id
-    pub fn id(&self) -> u8 {
-        VALUE_COUNT * (self.suit as u8) + (self.value as u8)
-    }
-
     /// Get a card from its id
     pub fn from_id(id: u8) -> Result<Card, IdError> {
         Ok(Card { value: Value::from_id(id % VALUE_COUNT)?, suit: Suit::from_id(id / 13)? })
+    }
+
+    /// Get the card id
+    pub fn id(&self) -> u8 {
+        VALUE_COUNT * self.suit.id() + self.value.id()
     }
 }
 
@@ -170,39 +180,39 @@ mod tests {
         let id: u8 = 39; // 13 * 3 + 0
         assert_eq!(Card::from_id(id), Ok(Card::new(Value::Ace, Suit::Spades)));
 
-        // Two of Spades is id 51
-        let id: u8 = 51; // 13 * 3 + 12
+        // Two of Spades is id 40
+        let id: u8 = 40; // 13 * 3 + 1
         assert_eq!(Card::from_id(id), Ok(Card::new(Value::Two, Suit::Spades)));
 
-        // Ten of Diamonds is id 17
-        let id: u8 = 17; // 13 * 1 + 4
+        // Ten of Diamonds is id 22
+        let id: u8 = 22; // 13 * 1 + 9
         assert_eq!(Card::from_id(id), Ok(Card::new(Value::Ten, Suit::Diamonds)));
 
-        // Seven of Clubs is id 7
-        let id: u8 = 7; // 13 * 0 + 7
+        // Seven of Clubs is id 6
+        let id: u8 = 6; // 13 * 0 + 6
         assert_eq!(Card::from_id(id), Ok(Card::new(Value::Seven, Suit::Clubs)));
 
-        // Queen of Hearts is id 28
-        let id: u8 = 28; // 13 * 2 + 2
+        // Queen of Hearts is id 37
+        let id: u8 = 37; // 13 * 2 + 11
         assert_eq!(Card::from_id(id), Ok(Card::new(Value::Queen, Suit::Hearts)));
     }
 
     #[test]
     fn test_card_to_id() {
-        // King of Clubs is id 1
-        let id: u8 = 1; // 13 * 0 + 1
+        // King of Clubs is id 12
+        let id: u8 = 12; // 13 * 0 + 12
         assert_eq!(Card::new(Value::King, Suit::Clubs).id(), id);
 
-        // Five of Diamonds is id 22
-        let id: u8 = 22; // 13 * 1 + 9
+        // Five of Diamonds is id 17
+        let id: u8 = 17; // 13 * 1 + 4
         assert_eq!(Card::new(Value::Five, Suit::Diamonds).id(), id);
 
-        // Eight of Hearts is id 32
-        let id: u8 = 32; // 13 * 2 + 6
+        // Eight of Hearts is id 33
+        let id: u8 = 33; // 13 * 2 + 7
         assert_eq!(Card::new(Value::Eight, Suit::Hearts).id(), id);
 
-        // Jack of Spades is id 1
-        let id: u8 = 42; // 13 * 3 + 3
+        // Jack of Spades is id 49
+        let id: u8 = 49; // 13 * 3 + 10
         assert_eq!(Card::new(Value::Jack, Suit::Spades).id(), id);
     }
 
