@@ -1,6 +1,5 @@
 use std::fmt;
 
-
 /// The number of unique card values
 const VALUE_COUNT: u8 = 13;
 
@@ -10,7 +9,6 @@ pub enum IdentyError {
     InvalidSuitId,
     InvalidValueId,
 }
-
 
 // =======================
 // == Suipi Card Values ==
@@ -86,7 +84,6 @@ impl fmt::Display for Value {
     }
 }
 
-
 // ======================
 // == Suipi Card Suits ==
 // ======================
@@ -134,7 +131,6 @@ impl fmt::Display for Suit {
     }
 }
 
-
 // =================
 // == Suipi Cards ==
 // =================
@@ -154,7 +150,10 @@ impl Card {
 
     /// Get a card from its id
     pub fn from_id(id: u8) -> Result<Card, IdentyError> {
-        Ok(Card { value: Value::from_id(id % VALUE_COUNT)?, suit: Suit::from_id(id / 13)? })
+        Ok(Card {
+            value: Value::from_id(id % VALUE_COUNT)?,
+            suit: Suit::from_id(id / 13)?,
+        })
     }
 
     /// Get the card id
@@ -168,7 +167,6 @@ impl fmt::Display for Card {
         write!(f, "{}{}", self.value, self.suit)
     }
 }
-
 
 #[cfg(test)]
 mod tests {
