@@ -12,54 +12,6 @@ pub enum IdError {
 }
 
 
-// ======================
-// == Suipi Card Suits ==
-// ======================
-
-/// Suipi playing card suits
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum Suit {
-    Clubs,
-    Diamonds,
-    Hearts,
-    Spades,
-}
-
-impl Suit {
-    /// Convert a suit to a string literal
-    fn as_string(&self) -> &str {
-        match self {
-            Suit::Clubs => "♣",
-            Suit::Diamonds => "♦",
-            Suit::Hearts => "♥",
-            Suit::Spades => "♠",
-        }
-    }
-
-    /// Get a suit from its id
-    pub fn from_id(id: u8) -> Result<Suit, IdError> {
-        match id {
-            0 => Ok(Suit::Clubs),
-            1 => Ok(Suit::Diamonds),
-            2 => Ok(Suit::Hearts),
-            3 => Ok(Suit::Spades),
-            _ => Err(IdError::InvalidSuitId),
-        }
-    }
-
-    /// Get the suit id
-    pub fn id(self) -> u8 {
-        self as u8
-    }
-}
-
-impl fmt::Display for Suit {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.as_string())
-    }
-}
-
-
 // =======================
 // == Suipi Card Values ==
 // =======================
@@ -129,6 +81,54 @@ impl Value {
 }
 
 impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_string())
+    }
+}
+
+
+// ======================
+// == Suipi Card Suits ==
+// ======================
+
+/// Suipi playing card suits
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum Suit {
+    Clubs,
+    Diamonds,
+    Hearts,
+    Spades,
+}
+
+impl Suit {
+    /// Convert a suit to a string literal
+    fn as_string(&self) -> &str {
+        match self {
+            Suit::Clubs => "♣",
+            Suit::Diamonds => "♦",
+            Suit::Hearts => "♥",
+            Suit::Spades => "♠",
+        }
+    }
+
+    /// Get a suit from its id
+    pub fn from_id(id: u8) -> Result<Suit, IdError> {
+        match id {
+            0 => Ok(Suit::Clubs),
+            1 => Ok(Suit::Diamonds),
+            2 => Ok(Suit::Hearts),
+            3 => Ok(Suit::Spades),
+            _ => Err(IdError::InvalidSuitId),
+        }
+    }
+
+    /// Get the suit id
+    pub fn id(self) -> u8 {
+        self as u8
+    }
+}
+
+impl fmt::Display for Suit {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.as_string())
     }
