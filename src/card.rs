@@ -6,7 +6,7 @@ const VALUE_COUNT: u8 = 13;
 
 /// Card identification errors
 #[derive(Debug, PartialEq)]
-pub enum IdError {
+pub enum IdentyError {
     InvalidSuitId,
     InvalidValueId,
 }
@@ -55,7 +55,7 @@ impl Value {
     }
 
     /// Get a value from its id
-    pub fn from_id(id: u8) -> Result<Value, IdError> {
+    pub fn from_id(id: u8) -> Result<Value, IdentyError> {
         match id {
             0 => Ok(Value::Ace),
             1 => Ok(Value::Two),
@@ -70,7 +70,7 @@ impl Value {
             10 => Ok(Value::Jack),
             11 => Ok(Value::Queen),
             12 => Ok(Value::King),
-            _ => Err(IdError::InvalidValueId),
+            _ => Err(IdentyError::InvalidValueId),
         }
     }
 
@@ -112,13 +112,13 @@ impl Suit {
     }
 
     /// Get a suit from its id
-    pub fn from_id(id: u8) -> Result<Suit, IdError> {
+    pub fn from_id(id: u8) -> Result<Suit, IdentyError> {
         match id {
             0 => Ok(Suit::Clubs),
             1 => Ok(Suit::Diamonds),
             2 => Ok(Suit::Hearts),
             3 => Ok(Suit::Spades),
-            _ => Err(IdError::InvalidSuitId),
+            _ => Err(IdentyError::InvalidSuitId),
         }
     }
 
@@ -153,7 +153,7 @@ impl Card {
     }
 
     /// Get a card from its id
-    pub fn from_id(id: u8) -> Result<Card, IdError> {
+    pub fn from_id(id: u8) -> Result<Card, IdentyError> {
         Ok(Card { value: Value::from_id(id % VALUE_COUNT)?, suit: Suit::from_id(id / 13)? })
     }
 
