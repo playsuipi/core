@@ -14,6 +14,7 @@ pub trait Set {
 // =====================
 
 /// Wrapper for a single card
+#[derive(Debug)]
 pub struct Single {
     card: Card,
 }
@@ -40,6 +41,7 @@ impl Set for Single {
 // =====================
 
 /// A set of cards that add up to a sum
+#[derive(Debug)]
 pub struct Build {
     cards: Vec<Card>,
 }
@@ -60,6 +62,41 @@ impl Set for Build {
         Ok(Value::from_id(
             self.cards.iter().map(|x| x.value.id() + 1).sum::<u8>() - 1,
         )?)
+    }
+}
+
+// =====================
+// == Group Cards Set ==
+// =====================
+
+/// A group of sets with the same values
+#[derive(Debug)]
+pub struct Group {
+    builds: Vec<Build>,
+    singles: Vec<Single>,
+}
+
+impl Group {
+    /// Get a group of sets with the same values
+    pub fn new(b: Vec<Build>, s: Vec<Single>) -> Group {
+        Group {
+            builds: b,
+            singles: s,
+        }
+    }
+}
+
+impl Set for Group {
+    fn to_cards(&self) -> Vec<Card> {
+        self.builds
+            .iter()
+            .flat_map(|x| x.to_cards())
+            .chain(self.singles.iter().flat_map(|x| x.to_cards()))
+            .collect::<Vec<Card>>()
+    }
+
+    fn value(&self) -> Result<Value, IdentyError> {
+        Err(IdentyError::InvalidValueId)
     }
 }
 
@@ -106,5 +143,21 @@ mod tests {
         let b = Build::new(xs.clone());
         assert_eq!(b.to_cards(), xs);
         assert_eq!(b.value(), Ok(Value::Ten));
+    }
+
+    #[test]
+    fn test_group_cards_set() {
+        let b = vec![Build::new(vec![
+            Card::new(Value::Two, Suit::Clubs),
+            Card::new(Value::Three, Suit::Spades),
+        ])];
+        let s = vec![Single::new(Card::new(Value::Five, Suit::Hearts))];
+        let g = Group::new(b, s);
+        let expected = [
+            Card::new(Value::Two, Suit::Clubs),
+            Card::new(Value::Three, Suit::Spades),
+            Card::new(Value::Five, Suit::Hearts),
+        ];
+        assert_eq!(g.to_cards(), expected);
     }
 }
