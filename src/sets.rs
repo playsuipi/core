@@ -189,18 +189,83 @@ mod tests {
 
     #[test]
     fn test_group_cards_set() {
-        let b = vec![Build::new(vec![
-            Card::new(Value::Two, Suit::Clubs),
-            Card::new(Value::Three, Suit::Spades),
-        ])];
-        let s = vec![Single::new(Card::new(Value::Five, Suit::Hearts))];
-        let g = Group::new(b, s);
-        let expected = [
+        let xs = [
             Card::new(Value::Two, Suit::Clubs),
             Card::new(Value::Three, Suit::Spades),
             Card::new(Value::Five, Suit::Hearts),
         ];
-        assert_eq!(g.to_cards(), expected);
+        let b = vec![Build::new(vec![xs[0], xs[1]])];
+        let s = vec![Single::new(xs[2])];
+        let g = Group::new(b, s);
+        assert_eq!(g.to_cards(), xs);
         assert_eq!(g.value(), Ok(Value::Five));
+
+        let xs = [
+            Card::new(Value::Three, Suit::Clubs),
+            Card::new(Value::Four, Suit::Diamonds),
+            Card::new(Value::Six, Suit::Hearts),
+            Card::new(Value::Ace, Suit::Spades),
+        ];
+        let b = vec![
+            Build::new(vec![xs[0], xs[1]]),
+            Build::new(vec![xs[2], xs[3]]),
+        ];
+        let s = vec![];
+        let g = Group::new(b, s);
+        assert_eq!(g.to_cards(), xs);
+        assert_eq!(g.value(), Ok(Value::Seven));
+
+        let xs = [
+            Card::new(Value::Nine, Suit::Clubs),
+            Card::new(Value::Nine, Suit::Hearts),
+        ];
+        let b = vec![];
+        let s = vec![Single::new(xs[0]), Single::new(xs[1])];
+        let g = Group::new(b, s);
+        assert_eq!(g.to_cards(), xs);
+        assert_eq!(g.value(), Ok(Value::Nine));
+    }
+
+    #[test]
+    fn test_invalid_group_cards_set() {
+        let xs = [
+            Card::new(Value::Two, Suit::Diamonds),
+            Card::new(Value::Ten, Suit::Spades),
+        ];
+        let b = vec![];
+        let s = vec![Single::new(xs[0]), Single::new(xs[1])];
+        let g = Group::new(b, s);
+        assert_eq!(g.to_cards(), xs);
+        assert_eq!(g.value(), Err(SuipiError::InvalidGroupError));
+
+        let xs = [
+            Card::new(Value::Three, Suit::Hearts),
+            Card::new(Value::Six, Suit::Clubs),
+            Card::new(Value::Two, Suit::Diamonds),
+            Card::new(Value::Ten, Suit::Spades),
+        ];
+        let b = vec![Build::new(vec![xs[0], xs[1]])];
+        let s = vec![Single::new(xs[2]), Single::new(xs[3])];
+        let g = Group::new(b, s);
+        assert_eq!(g.to_cards(), xs);
+        assert_eq!(g.value(), Err(SuipiError::InvalidGroupError));
+
+        let xs = [
+            Card::new(Value::Jack, Suit::Hearts),
+            Card::new(Value::Six, Suit::Clubs),
+            Card::new(Value::Two, Suit::Diamonds),
+            Card::new(Value::Ten, Suit::Spades),
+        ];
+        let b = vec![Build::new(vec![xs[0], xs[1]])];
+        let s = vec![Single::new(xs[2]), Single::new(xs[3])];
+        let g = Group::new(b, s);
+        assert_eq!(g.to_cards(), xs);
+        assert_eq!(g.value(), Err(SuipiError::InvalidBuildError));
+
+        let b = vec![Build::new(vec![])];
+        let s = vec![];
+        let g = Group::new(b, s);
+        assert_eq!(g.to_cards(), vec![]);
+        assert_eq!(g.value(), Err(SuipiError::InvalidBuildError));
     }
 }
