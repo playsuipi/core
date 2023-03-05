@@ -1,14 +1,8 @@
+use crate::error::SuipiError;
 use std::fmt;
 
 /// The number of unique card values
 const VALUE_COUNT: u8 = 13;
-
-/// Card identification errors
-#[derive(Debug, PartialEq)]
-pub enum IdentyError {
-    InvalidSuitId,
-    InvalidValueId,
-}
 
 // =======================
 // == Suipi Card Values ==
@@ -53,7 +47,7 @@ impl Value {
     }
 
     /// Get a value from its id
-    pub fn from_id(id: u8) -> Result<Value, IdentyError> {
+    pub fn from_id(id: u8) -> Result<Value, SuipiError> {
         match id {
             0 => Ok(Value::Ace),
             1 => Ok(Value::Two),
@@ -68,7 +62,7 @@ impl Value {
             10 => Ok(Value::Jack),
             11 => Ok(Value::Queen),
             12 => Ok(Value::King),
-            _ => Err(IdentyError::InvalidValueId),
+            _ => Err(SuipiError::InvalidValueError),
         }
     }
 
@@ -109,13 +103,13 @@ impl Suit {
     }
 
     /// Get a suit from its id
-    pub fn from_id(id: u8) -> Result<Suit, IdentyError> {
+    pub fn from_id(id: u8) -> Result<Suit, SuipiError> {
         match id {
             0 => Ok(Suit::Clubs),
             1 => Ok(Suit::Diamonds),
             2 => Ok(Suit::Hearts),
             3 => Ok(Suit::Spades),
-            _ => Err(IdentyError::InvalidSuitId),
+            _ => Err(SuipiError::InvalidSuitError),
         }
     }
 
@@ -149,7 +143,7 @@ impl Card {
     }
 
     /// Get a card from its id
-    pub fn from_id(id: u8) -> Result<Card, IdentyError> {
+    pub fn from_id(id: u8) -> Result<Card, SuipiError> {
         Ok(Card {
             value: Value::from_id(id % VALUE_COUNT)?,
             suit: Suit::from_id(id / 13)?,
