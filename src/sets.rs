@@ -60,10 +60,10 @@ impl Set for Build {
     }
 
     fn value(&self) -> Result<Value, SuipiError> {
-        match self.cards.iter().map(|x| x.value.id() + 1).sum::<u8>() - 1 {
-            10.. => Err(SuipiError::InvalidBuildError),
+        match self.cards.iter().map(|x| x.value.id() + 1).sum::<u8>() {
+            11.. => Err(SuipiError::InvalidBuildError),
             0 => Err(SuipiError::InvalidBuildError),
-            x => Ok(Value::from_id(x)?),
+            x => Ok(Value::from_id(x - 1)?),
         }
     }
 }
@@ -163,6 +163,28 @@ mod tests {
         let b = Build::new(xs.clone());
         assert_eq!(b.to_cards(), xs);
         assert_eq!(b.value(), Ok(Value::Ten));
+
+        // A single card build is technically valid
+        let xs = vec![Card::new(Value::Two, Suit::Spades)];
+        let b = Build::new(xs.clone());
+        assert_eq!(b.to_cards(), xs);
+        assert_eq!(b.value(), Ok(Value::Two));
+    }
+
+    #[test]
+    fn test_invalid_build_cards_set() {
+        let xs = vec![
+            Card::new(Value::King, Suit::Diamonds),
+            Card::new(Value::Queen, Suit::Hearts),
+        ];
+        let b = Build::new(xs.clone());
+        assert_eq!(b.to_cards(), xs);
+        assert_eq!(b.value(), Err(SuipiError::InvalidBuildError));
+
+        let xs = vec![];
+        let b = Build::new(xs.clone());
+        assert_eq!(b.to_cards(), xs);
+        assert_eq!(b.value(), Err(SuipiError::InvalidBuildError));
     }
 
     #[test]
