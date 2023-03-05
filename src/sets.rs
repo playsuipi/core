@@ -1,4 +1,5 @@
-use crate::card::{Card, IdentyError, Value};
+use crate::card::{Card, Value};
+use crate::error::SuipiError;
 
 /// Set of cards with a specific relationship
 pub trait Set {
@@ -6,7 +7,7 @@ pub trait Set {
     fn to_cards(&self) -> Vec<Card>;
 
     /// Get the calculated value of the set
-    fn value(&self) -> Result<Value, IdentyError>;
+    fn value(&self) -> Result<Value, SuipiError>;
 }
 
 // =====================
@@ -31,7 +32,7 @@ impl Set for Single {
         vec![self.card]
     }
 
-    fn value(&self) -> Result<Value, IdentyError> {
+    fn value(&self) -> Result<Value, SuipiError> {
         Ok(self.card.value)
     }
 }
@@ -58,10 +59,12 @@ impl Set for Build {
         self.cards.to_owned()
     }
 
-    fn value(&self) -> Result<Value, IdentyError> {
-        Ok(Value::from_id(
-            self.cards.iter().map(|x| x.value.id() + 1).sum::<u8>() - 1,
-        )?)
+    fn value(&self) -> Result<Value, SuipiError> {
+        match self.cards.iter().map(|x| x.value.id() + 1).sum::<u8>() - 1 {
+            10.. => Err(SuipiError::InvalidBuildError),
+            0 => Err(SuipiError::InvalidBuildError),
+            x => Ok(Value::from_id(x)?),
+        }
     }
 }
 
@@ -95,8 +98,25 @@ impl Set for Group {
             .collect::<Vec<Card>>()
     }
 
-    fn value(&self) -> Result<Value, IdentyError> {
-        Err(IdentyError::InvalidValueId)
+    fn value(&self) -> Result<Value, SuipiError> {
+        let v = self
+            .singles
+            .iter()
+            .map(|x| x.value())
+            .chain(self.builds.iter().map(|x| x.value()))
+            .reduce(|x, y| match (y, x) {
+                (Ok(a), Ok(b)) => match a == b {
+                    false => Err(SuipiError::InvalidGroupError),
+                    true => Ok(a),
+                },
+                (Ok(_), Err(e)) => Err(e),
+                (Err(e), _) => Err(e),
+            });
+
+        match v {
+            None => Err(SuipiError::InvalidGroupError),
+            Some(x) => x,
+        }
     }
 }
 
@@ -159,5 +179,6 @@ mod tests {
             Card::new(Value::Five, Suit::Hearts),
         ];
         assert_eq!(g.to_cards(), expected);
+        assert_eq!(g.value(), Ok(Value::Five));
     }
 }
