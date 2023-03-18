@@ -10,6 +10,9 @@ pub trait Set {
     fn value(&self) -> Result<Value, SuipiError>;
 }
 
+/// Set of cards that can be used in a build
+pub trait Buildable: Set {}
+
 // =====================
 // == Single Card Set ==
 // =====================
@@ -26,6 +29,8 @@ impl Single {
         Single { card: c }
     }
 }
+
+impl Buildable for Single {}
 
 impl Set for Single {
     fn to_cards(&self) -> Vec<Card> {
@@ -52,7 +57,19 @@ impl Build {
     pub fn new(xs: Vec<Card>) -> Build {
         Build { cards: xs }
     }
+
+    /// Get a build from two buildable sets
+    pub fn build(a: Box<&dyn Buildable>, b: Box<&dyn Buildable>) -> Build {
+        Build::new(
+            a.to_cards()
+                .into_iter()
+                .chain(b.to_cards().into_iter())
+                .collect::<Vec<Card>>(),
+        )
+    }
 }
+
+impl Buildable for Build {}
 
 impl Set for Build {
     fn to_cards(&self) -> Vec<Card> {
@@ -169,6 +186,19 @@ mod tests {
         let b = Build::new(xs.clone());
         assert_eq!(b.to_cards(), xs);
         assert_eq!(b.value(), Ok(Value::Two));
+
+        // Built using the build method
+        let xs = vec![
+            Card::new(Value::Six, Suit::Diamonds),
+            Card::new(Value::Ace, Suit::Clubs),
+            Card::new(Value::Three, Suit::Spades),
+        ];
+        let b = Build::build(
+            Box::new(&Single::new(xs[0])),
+            Box::new(&Build::new(vec![xs[1], xs[2]])),
+        );
+        assert_eq!(b.to_cards(), xs);
+        assert_eq!(b.value(), Ok(Value::Ten));
     }
 
     #[test]
