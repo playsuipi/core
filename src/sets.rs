@@ -173,6 +173,7 @@ mod tests {
 
     #[test]
     fn test_invalid_build_cards_set() {
+        // Build too high error
         let xs = vec![
             Card::new(Value::King, Suit::Diamonds),
             Card::new(Value::Queen, Suit::Hearts),
@@ -181,6 +182,7 @@ mod tests {
         assert_eq!(b.to_cards(), xs);
         assert_eq!(b.value(), Err(SuipiError::InvalidBuildError));
 
+        // Empty build error
         let xs = vec![];
         let b = Build::new(xs.clone());
         assert_eq!(b.to_cards(), xs);
@@ -228,6 +230,7 @@ mod tests {
 
     #[test]
     fn test_invalid_group_cards_set() {
+        // Value mismatch in Singles
         let xs = [
             Card::new(Value::Two, Suit::Diamonds),
             Card::new(Value::Ten, Suit::Spades),
@@ -238,6 +241,7 @@ mod tests {
         assert_eq!(g.to_cards(), xs);
         assert_eq!(g.value(), Err(SuipiError::InvalidGroupError));
 
+        // Value mismatch with Build
         let xs = [
             Card::new(Value::Three, Suit::Hearts),
             Card::new(Value::Six, Suit::Clubs),
@@ -250,6 +254,7 @@ mod tests {
         assert_eq!(g.to_cards(), xs);
         assert_eq!(g.value(), Err(SuipiError::InvalidGroupError));
 
+        // Build too high error bubble up
         let xs = [
             Card::new(Value::Jack, Suit::Hearts),
             Card::new(Value::Six, Suit::Clubs),
@@ -262,6 +267,7 @@ mod tests {
         assert_eq!(g.to_cards(), xs);
         assert_eq!(g.value(), Err(SuipiError::InvalidBuildError));
 
+        // Empty build error bubble up
         let b = vec![Build::new(vec![])];
         let s = vec![];
         let g = Group::new(b, s);
