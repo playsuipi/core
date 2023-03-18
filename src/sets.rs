@@ -18,7 +18,7 @@ pub trait Buildable: Set {}
 // =====================
 
 /// Wrapper for a single card
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct Single {
     card: Card,
 }
@@ -93,47 +93,55 @@ impl Set for Build {
 #[derive(Debug)]
 pub struct Group {
     builds: Vec<Build>,
-    singles: Vec<Single>,
+    root: Option<Single>,
 }
 
 impl Group {
     /// Get a group of sets with the same values
-    pub fn new(b: Vec<Build>, s: Vec<Single>) -> Group {
-        Group {
-            builds: b,
-            singles: s,
-        }
+    pub fn new(b: Vec<Build>, r: Option<Single>) -> Group {
+        Group { builds: b, root: r }
     }
 }
 
 impl Set for Group {
     fn to_cards(&self) -> Vec<Card> {
-        self.builds
+        let mut xs = self
+            .builds
             .iter()
             .flat_map(|x| x.to_cards())
-            .chain(self.singles.iter().flat_map(|x| x.to_cards()))
-            .collect::<Vec<Card>>()
+            .collect::<Vec<Card>>();
+
+        if let Some(s) = self.root {
+            xs.append(&mut s.to_cards());
+        }
+
+        return xs;
     }
 
     fn value(&self) -> Result<Value, SuipiError> {
-        let v = self
-            .singles
+        let mut xs = self
+            .builds
             .iter()
             .map(|x| x.value())
-            .chain(self.builds.iter().map(|x| x.value()))
-            .reduce(|x, y| match (y, x) {
-                (Ok(a), Ok(b)) => match a == b {
-                    false => Err(SuipiError::InvalidGroupError),
-                    true => Ok(a),
-                },
-                (Ok(_), Err(e)) => Err(e),
-                (Err(e), _) => Err(e),
-            });
+            .collect::<Vec<Result<Value, SuipiError>>>();
 
-        match v {
+        if let Some(s) = self.root {
+            xs.push(s.value());
+        }
+
+        let v = xs.into_iter().reduce(|x, y| match (y, x) {
+            (Ok(a), Ok(b)) => match a == b {
+                false => Err(SuipiError::InvalidGroupError),
+                true => Ok(a),
+            },
+            (Ok(_), Err(e)) => Err(e),
+            (Err(e), _) => Err(e),
+        });
+
+        return match v {
             None => Err(SuipiError::InvalidGroupError),
             Some(x) => x,
-        }
+        };
     }
 }
 
@@ -227,7 +235,7 @@ mod tests {
             Card::new(Value::Five, Suit::Hearts),
         ];
         let b = vec![Build::new(vec![xs[0], xs[1]])];
-        let s = vec![Single::new(xs[2])];
+        let s = Some(Single::new(xs[2]));
         let g = Group::new(b, s);
         assert_eq!(g.to_cards(), xs);
         assert_eq!(g.value(), Ok(Value::Five));
@@ -242,44 +250,21 @@ mod tests {
             Build::new(vec![xs[0], xs[1]]),
             Build::new(vec![xs[2], xs[3]]),
         ];
-        let s = vec![];
-        let g = Group::new(b, s);
+        let g = Group::new(b, None);
         assert_eq!(g.to_cards(), xs);
         assert_eq!(g.value(), Ok(Value::Seven));
-
-        let xs = [
-            Card::new(Value::Nine, Suit::Clubs),
-            Card::new(Value::Nine, Suit::Hearts),
-        ];
-        let b = vec![];
-        let s = vec![Single::new(xs[0]), Single::new(xs[1])];
-        let g = Group::new(b, s);
-        assert_eq!(g.to_cards(), xs);
-        assert_eq!(g.value(), Ok(Value::Nine));
     }
 
     #[test]
     fn test_invalid_group_cards_set() {
-        // Value mismatch in Singles
-        let xs = [
-            Card::new(Value::Two, Suit::Diamonds),
-            Card::new(Value::Ten, Suit::Spades),
-        ];
-        let b = vec![];
-        let s = vec![Single::new(xs[0]), Single::new(xs[1])];
-        let g = Group::new(b, s);
-        assert_eq!(g.to_cards(), xs);
-        assert_eq!(g.value(), Err(SuipiError::InvalidGroupError));
-
         // Value mismatch with Build
         let xs = [
             Card::new(Value::Three, Suit::Hearts),
-            Card::new(Value::Six, Suit::Clubs),
             Card::new(Value::Two, Suit::Diamonds),
-            Card::new(Value::Ten, Suit::Spades),
+            Card::new(Value::Six, Suit::Clubs),
         ];
         let b = vec![Build::new(vec![xs[0], xs[1]])];
-        let s = vec![Single::new(xs[2]), Single::new(xs[3])];
+        let s = Some(Single::new(xs[2]));
         let g = Group::new(b, s);
         assert_eq!(g.to_cards(), xs);
         assert_eq!(g.value(), Err(SuipiError::InvalidGroupError));
@@ -288,19 +273,15 @@ mod tests {
         let xs = [
             Card::new(Value::Jack, Suit::Hearts),
             Card::new(Value::Six, Suit::Clubs),
-            Card::new(Value::Two, Suit::Diamonds),
-            Card::new(Value::Ten, Suit::Spades),
         ];
         let b = vec![Build::new(vec![xs[0], xs[1]])];
-        let s = vec![Single::new(xs[2]), Single::new(xs[3])];
-        let g = Group::new(b, s);
+        let g = Group::new(b, None);
         assert_eq!(g.to_cards(), xs);
         assert_eq!(g.value(), Err(SuipiError::InvalidBuildError));
 
         // Empty build error bubble up
         let b = vec![Build::new(vec![])];
-        let s = vec![];
-        let g = Group::new(b, s);
+        let g = Group::new(b, None);
         assert_eq!(g.to_cards(), vec![]);
         assert_eq!(g.value(), Err(SuipiError::InvalidBuildError));
     }
