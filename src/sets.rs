@@ -109,43 +109,39 @@ impl Group {
 
 impl Set for Group {
     fn to_cards(&self) -> Vec<Card> {
-        let mut xs = self
-            .builds
+        self.builds
             .iter()
             .flat_map(|x| x.to_cards())
-            .collect::<Vec<Card>>();
-
-        if let Some(s) = self.root {
-            xs.append(&mut s.to_cards());
-        }
-
-        return xs;
+            .chain(match self.root {
+                Some(s) => s.to_cards(),
+                None => vec![],
+            })
+            .collect::<Vec<Card>>()
     }
 
     fn value(&self) -> Result<Value, SuipiError> {
-        let mut xs = self
+        match self
             .builds
             .iter()
             .map(|x| x.value())
-            .collect::<Vec<Result<Value, SuipiError>>>();
-
-        if let Some(s) = self.root {
-            xs.push(s.value());
+            .chain(match self.root {
+                Some(s) => vec![s.value()],
+                None => vec![],
+            })
+            .collect::<Result<Vec<Value>, SuipiError>>()
+        {
+            Ok(xs) => {
+                if xs.windows(2).all(|w| w[0] == w[1]) {
+                    match xs.get(0) {
+                        None => Err(SuipiError::InvalidGroupError),
+                        Some(x) => Ok(*x),
+                    }
+                } else {
+                    Err(SuipiError::InvalidGroupError)
+                }
+            }
+            Err(e) => Err(e),
         }
-
-        let v = xs.into_iter().reduce(|x, y| match (y, x) {
-            (Ok(a), Ok(b)) => match a == b {
-                false => Err(SuipiError::InvalidGroupError),
-                true => Ok(a),
-            },
-            (Ok(_), Err(e)) => Err(e),
-            (Err(e), _) => Err(e),
-        });
-
-        return match v {
-            None => Err(SuipiError::InvalidGroupError),
-            Some(x) => x,
-        };
     }
 }
 
@@ -286,9 +282,7 @@ mod tests {
         assert_eq!(g.value(), Err(SuipiError::InvalidBuildError));
 
         // Single card build error bubble up
-        let xs = [
-            Card::new(Value::Five, Suit::Diamonds),
-        ];
+        let xs = [Card::new(Value::Five, Suit::Diamonds)];
         let b = vec![Build::new(vec![xs[0]])];
         let g = Group::new(b, None);
         assert_eq!(g.to_cards(), xs);
