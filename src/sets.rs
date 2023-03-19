@@ -150,46 +150,142 @@ mod tests {
     use super::*;
     use crate::card::Suit;
 
-    #[test]
-    fn test_single_card_set() {
-        let v = Value::Four;
-        let s = Suit::Clubs;
-        let single = Single::new(Card::new(v, s));
-        let cards = single.to_cards();
-        assert_eq!(cards.len(), 1);
-        assert_eq!(cards[0].value, v);
-        assert_eq!(cards[0].suit, s);
-        assert_eq!(single.value(), Ok(v));
+    /// Check that a set matches the expected values
+    fn validate_set(s: Box<dyn Set>, cards: Vec<Card>, value: Result<Value, SuipiError>) {
+        assert_eq!(s.to_cards(), cards);
+        assert_eq!(s.value(), value);
+    }
+
+    /// Single validation helper
+    fn validate_single(x: Card, v: Result<Value, SuipiError>) {
+        validate_set(Box::new(Single::new(x)), vec![x], v);
+    }
+
+    /// Build validation helper
+    fn validate_build(xs: Vec<Card>, v: Result<Value, SuipiError>) {
+        validate_set(Box::new(Build::new(xs.clone())), xs, v);
+    }
+
+    /// Group validation helper
+    fn validate_group(builds: Vec<Vec<Card>>, single: Option<Card>, v: Result<Value, SuipiError>) {
+        let mut xs = vec![];
+        let mut bs = vec![];
+        let mut s = None;
+
+        for mut b in builds {
+            bs.push(Build::new(b.clone()));
+            xs.append(&mut b);
+        }
+
+        if let Some(x) = single {
+            s = Some(Single::new(x));
+            xs.push(x);
+        }
+
+        validate_set(Box::new(Group::new(bs, s)), xs, v);
     }
 
     #[test]
-    fn test_build_cards_set() {
-        let xs = vec![
-            Card::new(Value::Two, Suit::Spades),
-            Card::new(Value::Six, Suit::Hearts),
-        ];
-        let b = Build::new(xs.clone());
-        assert_eq!(b.to_cards(), xs);
-        assert_eq!(b.value(), Ok(Value::Eight));
+    fn test_single_card_set() {
+        validate_single(Card::new(Value::Four, Suit::Clubs), Ok(Value::Four));
+        validate_single(Card::new(Value::Ace, Suit::Spades), Ok(Value::Ace));
+        validate_single(Card::new(Value::King, Suit::Diamonds), Ok(Value::King));
+    }
 
-        let xs = vec![
-            Card::new(Value::Three, Suit::Diamonds),
-            Card::new(Value::Four, Suit::Clubs),
-        ];
-        let b = Build::new(xs.clone());
-        assert_eq!(b.to_cards(), xs);
-        assert_eq!(b.value(), Ok(Value::Seven));
+    #[test]
+    fn test_build_set_from_two_cards() {
+        validate_build(
+            vec![
+                Card::new(Value::Two, Suit::Spades),
+                Card::new(Value::Six, Suit::Hearts),
+            ],
+            Ok(Value::Eight),
+        );
 
-        let xs = vec![
-            Card::new(Value::Ace, Suit::Clubs),
-            Card::new(Value::Six, Suit::Diamonds),
-            Card::new(Value::Three, Suit::Spades),
-        ];
-        let b = Build::new(xs.clone());
-        assert_eq!(b.to_cards(), xs);
-        assert_eq!(b.value(), Ok(Value::Ten));
+        validate_build(
+            vec![
+                Card::new(Value::Three, Suit::Diamonds),
+                Card::new(Value::Four, Suit::Clubs),
+            ],
+            Ok(Value::Seven),
+        );
+    }
 
-        // Built using the build method
+    #[test]
+    fn test_build_set_from_many_cards() {
+        validate_build(
+            vec![
+                Card::new(Value::Ace, Suit::Clubs),
+                Card::new(Value::Five, Suit::Diamonds),
+                Card::new(Value::Three, Suit::Spades),
+            ],
+            Ok(Value::Nine),
+        );
+
+        validate_build(
+            vec![
+                Card::new(Value::Ace, Suit::Clubs),
+                Card::new(Value::Two, Suit::Diamonds),
+                Card::new(Value::Three, Suit::Spades),
+                Card::new(Value::Four, Suit::Hearts),
+            ],
+            Ok(Value::Ten),
+        );
+
+        validate_build(
+            vec![
+                Card::new(Value::Ace, Suit::Clubs),
+                Card::new(Value::Ace, Suit::Diamonds),
+                Card::new(Value::Ace, Suit::Hearts),
+                Card::new(Value::Ace, Suit::Spades),
+                Card::new(Value::Two, Suit::Clubs),
+                Card::new(Value::Two, Suit::Diamonds),
+                Card::new(Value::Two, Suit::Hearts),
+            ],
+            Ok(Value::Ten),
+        );
+    }
+
+    #[test]
+    fn test_build_above_ten_error() {
+        validate_build(
+            vec![
+                Card::new(Value::King, Suit::Diamonds),
+                Card::new(Value::Queen, Suit::Hearts),
+            ],
+            Err(SuipiError::InvalidBuildError),
+        );
+
+        validate_build(
+            vec![
+                Card::new(Value::Six, Suit::Spades),
+                Card::new(Value::Five, Suit::Clubs),
+            ],
+            Err(SuipiError::InvalidBuildError),
+        );
+
+        validate_build(
+            vec![
+                Card::new(Value::Two, Suit::Spades),
+                Card::new(Value::Three, Suit::Clubs),
+                Card::new(Value::Seven, Suit::Hearts),
+            ],
+            Err(SuipiError::InvalidBuildError),
+        );
+    }
+
+    #[test]
+    fn test_build_less_than_two_cards_error() {
+        validate_build(
+            vec![Card::new(Value::Eight, Suit::Diamonds)],
+            Err(SuipiError::InvalidBuildError),
+        );
+
+        validate_build(vec![], Err(SuipiError::InvalidBuildError));
+    }
+
+    #[test]
+    fn test_build_method() {
         let xs = vec![
             Card::new(Value::Six, Suit::Diamonds),
             Card::new(Value::Ace, Suit::Clubs),
@@ -199,99 +295,134 @@ mod tests {
             Box::new(&Single::new(xs[0])),
             Box::new(&Build::new(vec![xs[1], xs[2]])),
         );
-        assert_eq!(b.to_cards(), xs);
-        assert_eq!(b.value(), Ok(Value::Ten));
+        validate_set(Box::new(b), xs, Ok(Value::Ten));
     }
 
     #[test]
-    fn test_invalid_build_cards_set() {
-        // Build too high error
-        let xs = vec![
-            Card::new(Value::King, Suit::Diamonds),
-            Card::new(Value::Queen, Suit::Hearts),
-        ];
-        let b = Build::new(xs.clone());
-        assert_eq!(b.to_cards(), xs);
-        assert_eq!(b.value(), Err(SuipiError::InvalidBuildError));
+    fn test_group_set_from_builds() {
+        validate_group(
+            vec![
+                vec![
+                    Card::new(Value::Three, Suit::Clubs),
+                    Card::new(Value::Four, Suit::Diamonds),
+                ],
+                vec![
+                    Card::new(Value::Six, Suit::Hearts),
+                    Card::new(Value::Ace, Suit::Spades),
+                ],
+            ],
+            None,
+            Ok(Value::Seven),
+        );
 
-        // Single card build error
-        let xs = vec![Card::new(Value::Three, Suit::Diamonds)];
-        let b = Build::new(xs.clone());
-        assert_eq!(b.to_cards(), xs);
-        assert_eq!(b.value(), Err(SuipiError::InvalidBuildError));
-
-        // Empty build error
-        let xs = vec![];
-        let b = Build::new(xs.clone());
-        assert_eq!(b.to_cards(), xs);
-        assert_eq!(b.value(), Err(SuipiError::InvalidBuildError));
+        validate_group(
+            vec![
+                vec![
+                    Card::new(Value::Three, Suit::Clubs),
+                    Card::new(Value::Four, Suit::Diamonds),
+                    Card::new(Value::Three, Suit::Hearts),
+                ],
+                vec![
+                    Card::new(Value::Five, Suit::Spades),
+                    Card::new(Value::Five, Suit::Clubs),
+                ],
+            ],
+            None,
+            Ok(Value::Ten),
+        );
     }
 
     #[test]
-    fn test_group_cards_set() {
-        // Group build and single
-        let xs = [
-            Card::new(Value::Two, Suit::Clubs),
-            Card::new(Value::Three, Suit::Spades),
-            Card::new(Value::Five, Suit::Hearts),
-        ];
-        let b = vec![Build::new(vec![xs[0], xs[1]])];
-        let s = Some(Single::new(xs[2]));
-        let g = Group::new(b, s);
-        assert_eq!(g.to_cards(), xs);
-        assert_eq!(g.value(), Ok(Value::Five));
+    fn test_group_set_with_root_card() {
+        validate_group(
+            vec![vec![
+                Card::new(Value::Two, Suit::Clubs),
+                Card::new(Value::Three, Suit::Spades),
+            ]],
+            Some(Card::new(Value::Five, Suit::Hearts)),
+            Ok(Value::Five),
+        );
 
-        // Group two builds
-        let xs = [
-            Card::new(Value::Three, Suit::Clubs),
-            Card::new(Value::Four, Suit::Diamonds),
-            Card::new(Value::Six, Suit::Hearts),
-            Card::new(Value::Ace, Suit::Spades),
-        ];
-        let b = vec![
-            Build::new(vec![xs[0], xs[1]]),
-            Build::new(vec![xs[2], xs[3]]),
-        ];
-        let g = Group::new(b, None);
-        assert_eq!(g.to_cards(), xs);
-        assert_eq!(g.value(), Ok(Value::Seven));
+        validate_group(
+            vec![vec![
+                Card::new(Value::Four, Suit::Hearts),
+                Card::new(Value::Six, Suit::Clubs),
+            ]],
+            Some(Card::new(Value::Ten, Suit::Diamonds)),
+            Ok(Value::Ten),
+        );
     }
 
     #[test]
-    fn test_invalid_group_cards_set() {
-        // Value mismatch with Build
-        let xs = [
-            Card::new(Value::Three, Suit::Hearts),
-            Card::new(Value::Two, Suit::Diamonds),
-            Card::new(Value::Six, Suit::Clubs),
-        ];
-        let b = vec![Build::new(vec![xs[0], xs[1]])];
-        let s = Some(Single::new(xs[2]));
-        let g = Group::new(b, s);
-        assert_eq!(g.to_cards(), xs);
-        assert_eq!(g.value(), Err(SuipiError::InvalidGroupError));
+    fn test_group_set_values_mismatch_error() {
+        validate_group(
+            vec![
+                vec![
+                    Card::new(Value::Three, Suit::Clubs),
+                    Card::new(Value::Four, Suit::Diamonds),
+                ],
+                vec![
+                    Card::new(Value::Five, Suit::Spades),
+                    Card::new(Value::Five, Suit::Clubs),
+                ],
+            ],
+            None,
+            Err(SuipiError::InvalidGroupError),
+        );
 
-        // Build too high error bubble up
-        let xs = [
-            Card::new(Value::Jack, Suit::Hearts),
-            Card::new(Value::Six, Suit::Clubs),
-        ];
-        let b = vec![Build::new(vec![xs[0], xs[1]])];
-        let g = Group::new(b, None);
-        assert_eq!(g.to_cards(), xs);
-        assert_eq!(g.value(), Err(SuipiError::InvalidBuildError));
+        validate_group(
+            vec![vec![
+                Card::new(Value::Two, Suit::Diamonds),
+                Card::new(Value::Three, Suit::Spades),
+            ]],
+            Some(Card::new(Value::Seven, Suit::Clubs)),
+            Err(SuipiError::InvalidGroupError),
+        );
+    }
 
-        // Single card build error bubble up
-        let xs = [Card::new(Value::Five, Suit::Diamonds)];
-        let b = vec![Build::new(vec![xs[0]])];
-        let g = Group::new(b, None);
-        assert_eq!(g.to_cards(), xs);
-        assert_eq!(g.value(), Err(SuipiError::InvalidBuildError));
+    #[test]
+    fn test_group_set_with_single_value() {
+        //
+        // Although this is undefined behavior. It is technically valid for now.
+        //
+        validate_group(
+            vec![vec![
+                Card::new(Value::Four, Suit::Hearts),
+                Card::new(Value::Four, Suit::Clubs),
+            ]],
+            None,
+            Ok(Value::Eight),
+        );
 
-        // Empty build error bubble up
-        let b = vec![Build::new(vec![])];
-        let g = Group::new(b, None);
-        assert_eq!(g.to_cards(), vec![]);
-        assert_eq!(g.value(), Err(SuipiError::InvalidBuildError));
+        validate_group(
+            vec![],
+            Some(Card::new(Value::Nine, Suit::Spades)),
+            Ok(Value::Nine),
+        );
+    }
+
+    #[test]
+    fn test_group_set_no_values_error() {
+        validate_group(vec![], None, Err(SuipiError::InvalidGroupError));
+    }
+
+    #[test]
+    fn test_group_set_build_errors() {
+        // Build above ten error
+        validate_group(
+            vec![vec![
+                Card::new(Value::Six, Suit::Hearts),
+                Card::new(Value::Five, Suit::Spades),
+            ]],
+            Some(Card::new(Value::Jack, Suit::Clubs)),
+            Err(SuipiError::InvalidBuildError),
+        );
+
+        // Build less than two cards error
+        validate_group(
+            vec![vec![Card::new(Value::Queen, Suit::Hearts)]],
+            Some(Card::new(Value::Queen, Suit::Diamonds)),
+            Err(SuipiError::InvalidBuildError),
+        );
     }
 }
