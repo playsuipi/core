@@ -77,10 +77,14 @@ impl Set for Build {
     }
 
     fn value(&self) -> Result<Value, SuipiError> {
-        match self.cards.iter().map(|x| x.value.id() + 1).sum::<u8>() {
-            11.. => Err(SuipiError::InvalidBuildError),
-            0 => Err(SuipiError::InvalidBuildError),
-            x => Ok(Value::from_id(x - 1)?),
+        if self.cards.len() < 2 {
+            Err(SuipiError::InvalidBuildError)
+        } else {
+            match self.cards.iter().map(|x| x.value.id() + 1).sum::<u8>() {
+                11.. => Err(SuipiError::InvalidBuildError),
+                0 => Err(SuipiError::InvalidBuildError),
+                x => Ok(Value::from_id(x - 1)?),
+            }
         }
     }
 }
@@ -189,12 +193,6 @@ mod tests {
         assert_eq!(b.to_cards(), xs);
         assert_eq!(b.value(), Ok(Value::Ten));
 
-        // A single card build is technically valid
-        let xs = vec![Card::new(Value::Two, Suit::Spades)];
-        let b = Build::new(xs.clone());
-        assert_eq!(b.to_cards(), xs);
-        assert_eq!(b.value(), Ok(Value::Two));
-
         // Built using the build method
         let xs = vec![
             Card::new(Value::Six, Suit::Diamonds),
@@ -220,6 +218,12 @@ mod tests {
         assert_eq!(b.to_cards(), xs);
         assert_eq!(b.value(), Err(SuipiError::InvalidBuildError));
 
+        // Single card build error
+        let xs = vec![Card::new(Value::Three, Suit::Diamonds)];
+        let b = Build::new(xs.clone());
+        assert_eq!(b.to_cards(), xs);
+        assert_eq!(b.value(), Err(SuipiError::InvalidBuildError));
+
         // Empty build error
         let xs = vec![];
         let b = Build::new(xs.clone());
@@ -229,6 +233,7 @@ mod tests {
 
     #[test]
     fn test_group_cards_set() {
+        // Group build and single
         let xs = [
             Card::new(Value::Two, Suit::Clubs),
             Card::new(Value::Three, Suit::Spades),
@@ -240,6 +245,7 @@ mod tests {
         assert_eq!(g.to_cards(), xs);
         assert_eq!(g.value(), Ok(Value::Five));
 
+        // Group two builds
         let xs = [
             Card::new(Value::Three, Suit::Clubs),
             Card::new(Value::Four, Suit::Diamonds),
@@ -275,6 +281,15 @@ mod tests {
             Card::new(Value::Six, Suit::Clubs),
         ];
         let b = vec![Build::new(vec![xs[0], xs[1]])];
+        let g = Group::new(b, None);
+        assert_eq!(g.to_cards(), xs);
+        assert_eq!(g.value(), Err(SuipiError::InvalidBuildError));
+
+        // Single card build error bubble up
+        let xs = [
+            Card::new(Value::Five, Suit::Diamonds),
+        ];
+        let b = vec![Build::new(vec![xs[0]])];
         let g = Group::new(b, None);
         assert_eq!(g.to_cards(), xs);
         assert_eq!(g.value(), Err(SuipiError::InvalidBuildError));
