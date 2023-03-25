@@ -1,5 +1,14 @@
-use crate::card::{Card, Value};
-use crate::error::SuipiError;
+use crate::card::{Card, CardError, Value};
+
+/// Set value errors
+#[derive(Debug, PartialEq)]
+pub enum SetError {
+    TooFewCards,
+    ValueTooHigh,
+    ValueTooLow,
+    ValueMismatch,
+    InvalidCard(CardError),
+}
 
 /// Set of cards with a specific relationship
 pub trait Set {
@@ -7,7 +16,7 @@ pub trait Set {
     fn to_cards(&self) -> Vec<Card>;
 
     /// Get the calculated value of the set
-    fn to_value(&self) -> Result<Value, SuipiError>;
+    fn to_value(&self) -> Result<Value, SetError>;
 }
 
 /// Set of cards that can be used in a build
@@ -37,7 +46,7 @@ impl Set for Single {
         vec![self.card]
     }
 
-    fn to_value(&self) -> Result<Value, SuipiError> {
+    fn to_value(&self) -> Result<Value, SetError> {
         Ok(self.card.value)
     }
 }
@@ -76,14 +85,17 @@ impl Set for Build {
         self.cards.to_owned()
     }
 
-    fn to_value(&self) -> Result<Value, SuipiError> {
+    fn to_value(&self) -> Result<Value, SetError> {
         if self.cards.len() < 2 {
-            Err(SuipiError::InvalidBuildError)
+            Err(SetError::TooFewCards)
         } else {
             match self.cards.iter().map(|x| x.value.id() + 1).sum::<u8>() {
-                11.. => Err(SuipiError::InvalidBuildError),
-                0 => Err(SuipiError::InvalidBuildError),
-                x => Ok(Value::from_id(x - 1)?),
+                11.. => Err(SetError::ValueTooHigh),
+                0 => Err(SetError::ValueTooLow),
+                x => match Value::from_id(x - 1) {
+                    Err(e) => Err(SetError::InvalidCard(e)),
+                    Ok(y) => Ok(y),
+                },
             }
         }
     }
@@ -119,7 +131,7 @@ impl Set for Group {
             .collect::<Vec<Card>>()
     }
 
-    fn to_value(&self) -> Result<Value, SuipiError> {
+    fn to_value(&self) -> Result<Value, SetError> {
         match self
             .builds
             .iter()
@@ -128,16 +140,16 @@ impl Set for Group {
                 Some(s) => vec![s.to_value()],
                 None => vec![],
             })
-            .collect::<Result<Vec<Value>, SuipiError>>()
+            .collect::<Result<Vec<Value>, SetError>>()
         {
             Ok(xs) => {
                 if xs.windows(2).all(|w| w[0] == w[1]) {
                     match xs.get(0) {
-                        None => Err(SuipiError::InvalidGroupError),
+                        None => Err(SetError::TooFewCards),
                         Some(x) => Ok(*x),
                     }
                 } else {
-                    Err(SuipiError::InvalidGroupError)
+                    Err(SetError::ValueMismatch)
                 }
             }
             Err(e) => Err(e),
@@ -151,23 +163,23 @@ mod tests {
     use crate::card::Suit;
 
     /// Check that a set matches the expected values
-    fn validate_set(s: Box<dyn Set>, cards: Vec<Card>, value: Result<Value, SuipiError>) {
+    fn validate_set(s: Box<dyn Set>, cards: Vec<Card>, value: Result<Value, SetError>) {
         assert_eq!(s.to_cards(), cards);
         assert_eq!(s.to_value(), value);
     }
 
     /// Single validation helper
-    fn validate_single(x: Card, v: Result<Value, SuipiError>) {
+    fn validate_single(x: Card, v: Result<Value, SetError>) {
         validate_set(Box::new(Single::new(x)), vec![x], v);
     }
 
     /// Build validation helper
-    fn validate_build(xs: Vec<Card>, v: Result<Value, SuipiError>) {
+    fn validate_build(xs: Vec<Card>, v: Result<Value, SetError>) {
         validate_set(Box::new(Build::new(xs.clone())), xs, v);
     }
 
     /// Group validation helper
-    fn validate_group(builds: Vec<Vec<Card>>, single: Option<Card>, v: Result<Value, SuipiError>) {
+    fn validate_group(builds: Vec<Vec<Card>>, single: Option<Card>, v: Result<Value, SetError>) {
         let mut xs = vec![];
         let mut bs = vec![];
         let mut s = None;
@@ -247,13 +259,13 @@ mod tests {
     }
 
     #[test]
-    fn test_build_above_ten_error() {
+    fn test_build_value_too_high_error() {
         validate_build(
             vec![
                 Card::new(Value::King, Suit::Diamonds),
                 Card::new(Value::Queen, Suit::Hearts),
             ],
-            Err(SuipiError::InvalidBuildError),
+            Err(SetError::ValueTooHigh),
         );
 
         validate_build(
@@ -261,7 +273,7 @@ mod tests {
                 Card::new(Value::Six, Suit::Spades),
                 Card::new(Value::Five, Suit::Clubs),
             ],
-            Err(SuipiError::InvalidBuildError),
+            Err(SetError::ValueTooHigh),
         );
 
         validate_build(
@@ -270,18 +282,18 @@ mod tests {
                 Card::new(Value::Three, Suit::Clubs),
                 Card::new(Value::Seven, Suit::Hearts),
             ],
-            Err(SuipiError::InvalidBuildError),
+            Err(SetError::ValueTooHigh),
         );
     }
 
     #[test]
-    fn test_build_less_than_two_cards_error() {
+    fn test_build_too_few_cards_error() {
         validate_build(
             vec![Card::new(Value::Eight, Suit::Diamonds)],
-            Err(SuipiError::InvalidBuildError),
+            Err(SetError::TooFewCards),
         );
 
-        validate_build(vec![], Err(SuipiError::InvalidBuildError));
+        validate_build(vec![], Err(SetError::TooFewCards));
     }
 
     #[test]
@@ -354,7 +366,7 @@ mod tests {
     }
 
     #[test]
-    fn test_group_set_values_mismatch_error() {
+    fn test_group_value_mismatch_error() {
         validate_group(
             vec![
                 vec![
@@ -367,7 +379,7 @@ mod tests {
                 ],
             ],
             None,
-            Err(SuipiError::InvalidGroupError),
+            Err(SetError::ValueMismatch),
         );
 
         validate_group(
@@ -376,7 +388,7 @@ mod tests {
                 Card::new(Value::Three, Suit::Spades),
             ]],
             Some(Card::new(Value::Seven, Suit::Clubs)),
-            Err(SuipiError::InvalidGroupError),
+            Err(SetError::ValueMismatch),
         );
     }
 
@@ -402,8 +414,8 @@ mod tests {
     }
 
     #[test]
-    fn test_group_set_no_values_error() {
-        validate_group(vec![], None, Err(SuipiError::InvalidGroupError));
+    fn test_group_too_few_cards_error() {
+        validate_group(vec![], None, Err(SetError::TooFewCards));
     }
 
     #[test]
@@ -415,14 +427,14 @@ mod tests {
                 Card::new(Value::Five, Suit::Spades),
             ]],
             Some(Card::new(Value::Jack, Suit::Clubs)),
-            Err(SuipiError::InvalidBuildError),
+            Err(SetError::ValueTooHigh),
         );
 
         // Build less than two cards error
         validate_group(
             vec![vec![Card::new(Value::Queen, Suit::Hearts)]],
             Some(Card::new(Value::Queen, Suit::Diamonds)),
-            Err(SuipiError::InvalidBuildError),
+            Err(SetError::TooFewCards),
         );
     }
 }
