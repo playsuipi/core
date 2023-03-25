@@ -7,7 +7,7 @@ pub trait Set {
     fn to_cards(&self) -> Vec<Card>;
 
     /// Get the calculated value of the set
-    fn value(&self) -> Result<Value, SuipiError>;
+    fn to_value(&self) -> Result<Value, SuipiError>;
 }
 
 /// Set of cards that can be used in a build
@@ -37,7 +37,7 @@ impl Set for Single {
         vec![self.card]
     }
 
-    fn value(&self) -> Result<Value, SuipiError> {
+    fn to_value(&self) -> Result<Value, SuipiError> {
         Ok(self.card.value)
     }
 }
@@ -76,7 +76,7 @@ impl Set for Build {
         self.cards.to_owned()
     }
 
-    fn value(&self) -> Result<Value, SuipiError> {
+    fn to_value(&self) -> Result<Value, SuipiError> {
         if self.cards.len() < 2 {
             Err(SuipiError::InvalidBuildError)
         } else {
@@ -119,13 +119,13 @@ impl Set for Group {
             .collect::<Vec<Card>>()
     }
 
-    fn value(&self) -> Result<Value, SuipiError> {
+    fn to_value(&self) -> Result<Value, SuipiError> {
         match self
             .builds
             .iter()
-            .map(|x| x.value())
+            .map(|x| x.to_value())
             .chain(match self.root {
-                Some(s) => vec![s.value()],
+                Some(s) => vec![s.to_value()],
                 None => vec![],
             })
             .collect::<Result<Vec<Value>, SuipiError>>()
@@ -153,7 +153,7 @@ mod tests {
     /// Check that a set matches the expected values
     fn validate_set(s: Box<dyn Set>, cards: Vec<Card>, value: Result<Value, SuipiError>) {
         assert_eq!(s.to_cards(), cards);
-        assert_eq!(s.value(), value);
+        assert_eq!(s.to_value(), value);
     }
 
     /// Single validation helper
