@@ -1,4 +1,5 @@
 use crate::card::{Card, CardError, Value};
+use std::fmt;
 
 /// Set value errors
 #[derive(Debug, PartialEq)]
@@ -17,6 +18,21 @@ pub trait Set {
 
     /// Get the calculated value of the set
     fn to_value(&self) -> Result<Value, SetError>;
+}
+
+impl fmt::Debug for dyn Set + 'static {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "({:?})->{}",
+            self.to_value(),
+            self.to_cards()
+                .iter()
+                .map(|c| c.to_string())
+                .collect::<Vec<String>>()
+                .join("|")
+        )
+    }
 }
 
 /// Set of cards that can be used in a build
@@ -175,6 +191,7 @@ impl Set for Group {
 // ====================
 
 /// A set of cards paired with a single capturing card
+#[derive(Debug)]
 pub struct Pair {
     target: Box<dyn Set>,
     capture: Single,
