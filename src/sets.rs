@@ -56,7 +56,7 @@ impl Set for Single {
 // =====================
 
 /// A set of cards that add up to a sum
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Build {
     cards: Vec<Card>,
 }
@@ -106,7 +106,7 @@ impl Set for Build {
 // =====================
 
 /// A group of sets with the same values
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Group {
     builds: Vec<Build>,
     root: Option<Single>,
@@ -116,6 +116,19 @@ impl Group {
     /// Get a group of sets with the same values
     pub fn new(b: Vec<Build>, r: Option<Single>) -> Group {
         Group { builds: b, root: r }
+    }
+
+    /// Get a group from two different groups
+    pub fn group(a: Group, b: Group) -> Group {
+        Group::new(
+            [a.builds.clone(), b.builds.clone()].concat(),
+            match (a.root, b.root) {
+                (None, None) => None,
+                (Some(x), None) => Some(x),
+                (None, Some(y)) => Some(y),
+                (Some(_), Some(_)) => None, // Undefined behavior
+            },
+        )
     }
 }
 
@@ -478,6 +491,34 @@ mod tests {
             Some(Card::new(Value::Queen, Suit::Diamonds)),
             Err(SetError::TooFewCards),
         );
+    }
+
+    #[test]
+    fn test_group_method() {
+        let xs = vec![
+            Card::new(Value::Two, Suit::Spades),
+            Card::new(Value::Four, Suit::Spades),
+            Card::new(Value::Three, Suit::Clubs),
+            Card::new(Value::Three, Suit::Diamonds),
+            Card::new(Value::Five, Suit::Hearts),
+            Card::new(Value::Ace, Suit::Spades),
+            Card::new(Value::Six, Suit::Hearts),
+        ];
+
+        let a = Group::new(
+            vec![Build::new(vec![xs[0], xs[1]])],
+            Some(Single::new(xs[6])),
+        );
+
+        let b = Group::new(
+            vec![
+                Build::new(vec![xs[2], xs[3]]),
+                Build::new(vec![xs[4], xs[5]]),
+            ],
+            None,
+        );
+
+        validate_set(Box::new(Group::group(a, b)), xs, Ok(Value::Six));
     }
 
     #[test]
