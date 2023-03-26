@@ -157,6 +157,40 @@ impl Set for Group {
     }
 }
 
+// ====================
+// == Pair Cards Set ==
+// ====================
+
+/// A set of cards paired with a single capturing card
+pub struct Pair {
+    target: Box<dyn Set>,
+    capture: Single,
+}
+
+impl Pair {
+    /// Get a pair from a group and a single
+    pub fn new(t: Box<dyn Set>, c: Single) -> Pair {
+        Pair {
+            target: t,
+            capture: c,
+        }
+    }
+}
+
+impl Set for Pair {
+    fn to_cards(&self) -> Vec<Card> {
+        [self.target.to_cards(), self.capture.to_cards()].concat()
+    }
+
+    fn to_value(&self) -> Result<Value, SetError> {
+        if self.target.to_value()? == self.capture.to_value()? {
+            self.capture.to_value()
+        } else {
+            Err(SetError::ValueMismatch)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -195,6 +229,14 @@ mod tests {
         }
 
         validate_set(Box::new(Group::new(bs, s)), xs, v);
+    }
+
+    /// Pair validation helper
+    fn validate_pair(target: Box<dyn Set>, capture: Card, v: Result<Value, SetError>) {
+        let mut xs = target.to_cards();
+        xs.push(capture);
+
+        validate_set(Box::new(Pair::new(target, Single::new(capture))), xs, v);
     }
 
     #[test]
@@ -435,6 +477,174 @@ mod tests {
             vec![vec![Card::new(Value::Queen, Suit::Hearts)]],
             Some(Card::new(Value::Queen, Suit::Diamonds)),
             Err(SetError::TooFewCards),
+        );
+    }
+
+    #[test]
+    fn test_pair_set_from_single() {
+        validate_pair(
+            Box::new(Single::new(Card::new(Value::Five, Suit::Hearts))),
+            Card::new(Value::Five, Suit::Diamonds),
+            Ok(Value::Five),
+        );
+
+        validate_pair(
+            Box::new(Single::new(Card::new(Value::Queen, Suit::Clubs))),
+            Card::new(Value::Queen, Suit::Spades),
+            Ok(Value::Queen),
+        );
+
+        validate_pair(
+            Box::new(Single::new(Card::new(Value::Ace, Suit::Diamonds))),
+            Card::new(Value::Ace, Suit::Clubs),
+            Ok(Value::Ace),
+        );
+    }
+
+    #[test]
+    fn test_pair_set_from_build() {
+        validate_pair(
+            Box::new(Build::new(vec![
+                Card::new(Value::Four, Suit::Clubs),
+                Card::new(Value::Six, Suit::Hearts),
+            ])),
+            Card::new(Value::Ten, Suit::Diamonds),
+            Ok(Value::Ten),
+        );
+
+        validate_pair(
+            Box::new(Build::new(vec![
+                Card::new(Value::Ace, Suit::Spades),
+                Card::new(Value::Four, Suit::Diamonds),
+                Card::new(Value::Two, Suit::Spades),
+            ])),
+            Card::new(Value::Seven, Suit::Hearts),
+            Ok(Value::Seven),
+        );
+
+        validate_pair(
+            Box::new(Build::new(vec![
+                Card::new(Value::Ace, Suit::Clubs),
+                Card::new(Value::Ace, Suit::Hearts),
+            ])),
+            Card::new(Value::Two, Suit::Hearts),
+            Ok(Value::Two),
+        );
+    }
+
+    #[test]
+    fn test_pair_set_from_group() {
+        validate_pair(
+            Box::new(Group::new(
+                vec![],
+                Some(Single::new(Card::new(Value::Ace, Suit::Spades))),
+            )),
+            Card::new(Value::Ace, Suit::Hearts),
+            Ok(Value::Ace),
+        );
+
+        validate_pair(
+            Box::new(Group::new(
+                vec![Build::new(vec![
+                    Card::new(Value::Three, Suit::Hearts),
+                    Card::new(Value::Five, Suit::Diamonds),
+                ])],
+                None,
+            )),
+            Card::new(Value::Eight, Suit::Clubs),
+            Ok(Value::Eight),
+        );
+
+        validate_pair(
+            Box::new(Group::new(
+                vec![Build::new(vec![
+                    Card::new(Value::Two, Suit::Spades),
+                    Card::new(Value::Two, Suit::Clubs),
+                    Card::new(Value::Five, Suit::Clubs),
+                    Card::new(Value::Ace, Suit::Hearts),
+                ])],
+                Some(Single::new(Card::new(Value::Ten, Suit::Spades))),
+            )),
+            Card::new(Value::Ten, Suit::Diamonds),
+            Ok(Value::Ten),
+        );
+
+        validate_pair(
+            Box::new(Group::new(
+                vec![
+                    Build::new(vec![
+                        Card::new(Value::Two, Suit::Hearts),
+                        Card::new(Value::Four, Suit::Diamonds),
+                    ]),
+                    Build::new(vec![
+                        Card::new(Value::Three, Suit::Spades),
+                        Card::new(Value::Three, Suit::Clubs),
+                    ]),
+                ],
+                Some(Single::new(Card::new(Value::Six, Suit::Hearts))),
+            )),
+            Card::new(Value::Six, Suit::Spades),
+            Ok(Value::Six),
+        );
+    }
+
+    #[test]
+    fn test_pair_value_mismatch_error() {
+        validate_pair(
+            Box::new(Single::new(Card::new(Value::Six, Suit::Hearts))),
+            Card::new(Value::King, Suit::Diamonds),
+            Err(SetError::ValueMismatch),
+        );
+
+        validate_pair(
+            Box::new(Build::new(vec![
+                Card::new(Value::Two, Suit::Spades),
+                Card::new(Value::Three, Suit::Hearts),
+            ])),
+            Card::new(Value::Four, Suit::Diamonds),
+            Err(SetError::ValueMismatch),
+        );
+
+        validate_pair(
+            Box::new(Group::new(
+                vec![Build::new(vec![
+                    Card::new(Value::Two, Suit::Diamonds),
+                    Card::new(Value::Five, Suit::Clubs),
+                ])],
+                Some(Single::new(Card::new(Value::Seven, Suit::Hearts))),
+            )),
+            Card::new(Value::Six, Suit::Clubs),
+            Err(SetError::ValueMismatch),
+        );
+    }
+
+    #[test]
+    fn test_pair_set_child_errors() {
+        validate_pair(
+            Box::new(Build::new(vec![
+                Card::new(Value::Ten, Suit::Clubs),
+                Card::new(Value::Two, Suit::Diamonds),
+            ])),
+            Card::new(Value::Queen, Suit::Hearts),
+            Err(SetError::ValueTooHigh),
+        );
+
+        validate_pair(
+            Box::new(Group::new(vec![], None)),
+            Card::new(Value::Ace, Suit::Hearts),
+            Err(SetError::TooFewCards),
+        );
+
+        validate_pair(
+            Box::new(Group::new(
+                vec![Build::new(vec![
+                    Card::new(Value::Four, Suit::Spades),
+                    Card::new(Value::Four, Suit::Hearts),
+                ])],
+                Some(Single::new(Card::new(Value::Seven, Suit::Clubs))),
+            )),
+            Card::new(Value::Eight, Suit::Hearts),
+            Err(SetError::ValueMismatch),
         );
     }
 }
