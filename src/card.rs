@@ -15,7 +15,7 @@ pub enum CardError {
 // =======================
 
 /// Suipi playing card values
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Value {
     Ace,
     Two,
