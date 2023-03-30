@@ -1,4 +1,5 @@
 use crate::card::{Card, Value};
+use crate::rng::{ChaCha20Rng, SliceRandom};
 use crate::sets::{Set, SetError, Single};
 use std::collections::{HashSet, VecDeque};
 
@@ -24,6 +25,11 @@ impl Game {
         for i in 0..52 {
             self.deck.push_back(Card::from_id(i).unwrap());
         }
+    }
+
+    /// Shuffle the deck using the given RNG
+    fn shuffle_deck(&mut self, rng: &mut ChaCha20Rng) {
+        self.deck.make_contiguous().shuffle(rng);
     }
 
     /// Deal a single card from the deck
@@ -76,8 +82,9 @@ impl Game {
     }
 
     /// Setup the state for a game of Suipi
-    pub fn setup(&mut self) {
+    pub fn setup(&mut self, rng: &mut ChaCha20Rng) {
         self.init_deck();
+        self.shuffle_deck(rng);
         self.deal_hands();
         self.deal_floor();
     }
