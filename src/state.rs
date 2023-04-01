@@ -1,3 +1,4 @@
+use crate::action::Action;
 use crate::card::{Card, Value};
 use crate::rng::{ChaCha20Rng, SliceRandom};
 use crate::sets::{Set, SetError, Single};
@@ -79,5 +80,10 @@ impl Game {
                 }
             }
         }
+    }
+
+    /// Play an action and save the resulting state
+    pub fn play(&mut self, x: Action) {
+        println!("Action: {:#?}", x);
     }
 }

@@ -24,13 +24,13 @@ impl fmt::Debug for dyn Set + 'static {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "({:?})->{}",
+            "{:?} = ({})",
             self.to_value(),
             self.to_cards()
                 .iter()
                 .map(|c| c.to_string())
                 .collect::<Vec<String>>()
-                .join("|")
+                .join("+")
         )
     }
 }
