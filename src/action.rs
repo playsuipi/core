@@ -1,7 +1,8 @@
-/// Annotation parsing error
+/// Byte parsing error
 #[derive(Debug, PartialEq, Eq)]
-pub enum AnnotationError {
-    InvalidCharacter,
+pub enum ParsingError {
+    InvalidByte,
+    InvalidAddress,
 }
 
 /// A pile address
@@ -13,68 +14,72 @@ pub enum Address {
     Floor(u8), // Address of a pile on the floor
 }
 
-/// The operation of a step
+/// The type of action
 #[derive(Debug, PartialEq, Eq)]
 pub enum Operation {
     Passive, // Simple card movement between piles
     Active,  // Trigger a change in value or score
 }
 
-/// A step in an action
+/// A single atomic Suipi action
 #[derive(Debug, PartialEq, Eq)]
-pub struct Step {
+pub struct Action {
     pub operation: Operation,
     pub address: Address,
 }
 
-impl Step {
-    /// Get a step from an op and an addr
-    fn new(o: Operation, a: Address) -> Step {
-        Step {
+impl Action {
+    /// Get an action from an operation and an address
+    fn new(o: Operation, a: Address) -> Action {
+        Action {
             operation: o,
             address: a,
         }
     }
+
+    /// Get an action from a byte
+    pub fn from_byte(x: u8) -> Result<Action, ParsingError> {
+        if x & 0b11000000 > 0 {
+            // We only use 6 bits per byte
+            Err(ParsingError::InvalidByte)
+        } else {
+            Ok(Action::new(
+                if x > 0b00100000 {
+                    Operation::Active
+                } else {
+                    Operation::Passive
+                },
+                match x & 0b00011111 {
+                    0 => Ok(Address::Pair),
+                    1..=8 => Ok(Address::Hand((x & 0b00011111) - 1)),
+                    9 => Ok(Address::Discard),
+                    10..=23 => Ok(Address::Floor((x & 0b00011111) - 10)),
+                    _ => Err(ParsingError::InvalidAddress),
+                }?,
+            ))
+        }
+    }
 }
 
-/// An action in a Suipi game
+/// A Suipi move comprised of sequential actions
 #[derive(Debug, PartialEq, Eq)]
-pub struct Action {
-    pub steps: Vec<Step>,
+pub struct Move {
+    pub actions: Vec<Action>,
 }
 
-impl Action {
-    /// Get an action from a vec of steps
-    fn new(xs: Vec<Step>) -> Action {
-        Action { steps: xs }
+impl Move {
+    /// Get a move from a set of actions
+    pub fn new(a: Vec<Action>) -> Move {
+        Move { actions: a }
     }
 
-    /// Get an action from a Suipi annotation
-    pub fn from_annotation(annotation: &String) -> Result<Action, AnnotationError> {
-        let mut steps: Vec<Step> = vec![];
-        let mut o: Option<Operation> = Some(Operation::Passive);
-        let mut a: Option<Address> = None;
-        for ch in annotation.chars() {
-            match ch {
-                '!' => steps.push(Step::new(Operation::Passive, Address::Discard)),
-                '*' => steps.push(Step::new(Operation::Active, Address::Pair)),
-                '&' => o = Some(Operation::Passive),
-                '+' => o = Some(Operation::Active),
-                '0' => a = Some(Address::Pair),
-                '1'..='8' => a = Some(Address::Hand(ch as u8 - 49)),
-                '9' => a = Some(Address::Discard),
-                'A'..='M' => a = Some(Address::Floor(ch as u8 - 65)),
-                _ => {}
-            }
-
-            if o.is_some() && a.is_some() {
-                steps.push(Step::new(o.unwrap(), a.unwrap()));
-                o = None;
-                a = None;
-            }
-        }
-
-        Ok(Action::new(steps))
+    /// Get a move from a set of bytes
+    pub fn from_bytes(xs: Vec<u8>) -> Result<Move, ParsingError> {
+        Ok(Move::new(
+            xs.iter()
+                .map(|x| Action::from_byte(x.to_owned()))
+                .collect::<Result<Vec<Action>, ParsingError>>()?,
+        ))
     }
 }
 
@@ -82,108 +87,50 @@ impl Action {
 mod tests {
     use super::*;
 
+    const A: u8 = 32;
+    const P: u8 = 0;
+
     #[test]
-    fn test_discard_smart_pile() {
-        let a = Action::from_annotation(&String::from("!1"));
+    fn test_from_bytes() {
         assert_eq!(
-            a,
-            Ok(Action::new(vec![
-                Step::new(Operation::Passive, Address::Discard),
-                Step::new(Operation::Passive, Address::Hand(0)),
-            ])),
+            Move::from_bytes(vec![P + 1]),
+            Ok(Move::new(vec![Action::new(
+                Operation::Passive,
+                Address::Hand(0)
+            ),]))
         );
 
-        let a = Action::from_annotation(&String::from("!8"));
         assert_eq!(
-            a,
-            Ok(Action::new(vec![
-                Step::new(Operation::Passive, Address::Discard),
-                Step::new(Operation::Passive, Address::Hand(7)),
-            ])),
+            Move::from_bytes(vec![A + 1, P + 10]),
+            Ok(Move::new(vec![
+                Action::new(Operation::Active, Address::Hand(0)),
+                Action::new(Operation::Passive, Address::Floor(0)),
+            ]))
         );
 
-        // Valid syntax, invalid move
-        let a = Action::from_annotation(&String::from("!A"));
         assert_eq!(
-            a,
-            Ok(Action::new(vec![
-                Step::new(Operation::Passive, Address::Discard),
-                Step::new(Operation::Passive, Address::Floor(0)),
-            ])),
-        );
-
-        // Invalid syntax, still parsable?
-        let a = Action::from_annotation(&String::from("!!"));
-        assert_eq!(
-            a,
-            Ok(Action::new(vec![
-                Step::new(Operation::Passive, Address::Discard),
-                Step::new(Operation::Passive, Address::Discard),
-            ])),
+            Move::from_bytes(vec![P + 10, A + 11, A + 12, P + 13, A + 14, P + 1]),
+            Ok(Move::new(vec![
+                Action::new(Operation::Passive, Address::Floor(0)),
+                Action::new(Operation::Active, Address::Floor(1)),
+                Action::new(Operation::Active, Address::Floor(2)),
+                Action::new(Operation::Passive, Address::Floor(3)),
+                Action::new(Operation::Active, Address::Floor(4)),
+                Action::new(Operation::Passive, Address::Hand(0)),
+            ]))
         );
     }
 
     #[test]
-    fn test_pair_smart_pile() {
-        let a = Action::from_annotation(&String::from("*1&A"));
+    fn test_from_bytes_error() {
         assert_eq!(
-            a,
-            Ok(Action::new(vec![
-                Step::new(Operation::Active, Address::Pair),
-                Step::new(Operation::Passive, Address::Hand(0)),
-                Step::new(Operation::Passive, Address::Floor(0)),
-            ])),
+            Move::from_bytes(vec![P + 10, 64]),
+            Err(ParsingError::InvalidByte)
         );
 
-        let a = Action::from_annotation(&String::from("*5&B+C"));
         assert_eq!(
-            a,
-            Ok(Action::new(vec![
-                Step::new(Operation::Active, Address::Pair),
-                Step::new(Operation::Passive, Address::Hand(4)),
-                Step::new(Operation::Passive, Address::Floor(1)),
-                Step::new(Operation::Active, Address::Floor(2)),
-            ])),
-        );
-
-        // Valid syntax, invalid move
-        let a = Action::from_annotation(&String::from("*A+B+C"));
-        assert_eq!(
-            a,
-            Ok(Action::new(vec![
-                Step::new(Operation::Active, Address::Pair),
-                Step::new(Operation::Passive, Address::Floor(0)),
-                Step::new(Operation::Active, Address::Floor(1)),
-                Step::new(Operation::Active, Address::Floor(2)),
-            ])),
-        );
-
-        // Not cool...
-        let a = Action::from_annotation(&String::from("*!*!"));
-        assert_eq!(
-            a,
-            Ok(Action::new(vec![
-                Step::new(Operation::Active, Address::Pair),
-                Step::new(Operation::Passive, Address::Discard),
-                Step::new(Operation::Active, Address::Pair),
-                Step::new(Operation::Passive, Address::Discard),
-            ])),
-        );
-    }
-
-    #[test]
-    fn test_standard_piles() {
-        let a = Action::from_annotation(&String::from("A+B+C&D+E&1"));
-        assert_eq!(
-            a,
-            Ok(Action::new(vec![
-                Step::new(Operation::Passive, Address::Floor(0)),
-                Step::new(Operation::Active, Address::Floor(1)),
-                Step::new(Operation::Active, Address::Floor(2)),
-                Step::new(Operation::Passive, Address::Floor(3)),
-                Step::new(Operation::Active, Address::Floor(4)),
-                Step::new(Operation::Passive, Address::Hand(0)),
-            ])),
+            Move::from_bytes(vec![100, 101, 102]),
+            Err(ParsingError::InvalidByte)
         );
     }
 }
