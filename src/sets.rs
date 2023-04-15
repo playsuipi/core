@@ -35,6 +35,13 @@ impl fmt::Debug for dyn Set + 'static {
     }
 }
 
+impl PartialEq for dyn Set + 'static {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_cards() == other.to_cards()
+    }
+}
+impl Eq for dyn Set + 'static {}
+
 /// Set of cards that can be used in a build
 pub trait Buildable: Set {}
 
@@ -55,8 +62,6 @@ impl Single {
     }
 }
 
-impl Buildable for Single {}
-
 impl Set for Single {
     fn to_cards(&self) -> Vec<Card> {
         vec![self.card]
@@ -66,6 +71,7 @@ impl Set for Single {
         Ok(self.card.value)
     }
 }
+impl Buildable for Single {}
 
 // =====================
 // == Build Cards Set ==
@@ -94,8 +100,6 @@ impl Build {
     }
 }
 
-impl Buildable for Build {}
-
 impl Set for Build {
     fn to_cards(&self) -> Vec<Card> {
         self.cards.to_owned()
@@ -116,6 +120,7 @@ impl Set for Build {
         }
     }
 }
+impl Buildable for Build {}
 
 // =====================
 // == Group Cards Set ==

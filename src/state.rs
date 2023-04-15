@@ -1,4 +1,4 @@
-use crate::action::Action;
+use crate::action::Move;
 use crate::card::Card;
 use crate::rng::{ChaCha20Rng, SliceRandom};
 use crate::sets::{Set, Single};
@@ -6,12 +6,21 @@ use std::collections::{HashSet, VecDeque};
 
 pub type Pile = Option<Box<dyn Set>>;
 
-#[derive(Debug, Default)]
+/// A Suipi player's state
+#[derive(Debug, Default, Eq, PartialEq)]
 pub struct Player {
     pub hand: [Pile; 8],
     // pub pairs: Vec<Pair>,
 }
 
+impl Player {
+    /// Get a new player from 8 piles
+    pub fn new(h: [Pile; 8]) -> Player {
+        Player { hand: h }
+    }
+}
+
+/// A Suipi game's state
 #[derive(Debug, Default)]
 pub struct Game {
     pub deck: VecDeque<Card>,
@@ -77,8 +86,76 @@ impl Game {
         }
     }
 
-    /// Play an action and save the resulting state
-    pub fn play(&mut self, x: Action) {
-        println!("Action: {:#?}", x);
+    /// Apply a Suipi move to the game state
+    pub fn apply(&mut self, m: Move) {
+        println!("Action: {:#?}", m);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::card::{Suit, Value};
+    use crate::rng;
+
+    fn single(v: Value, s: Suit) -> Pile {
+        Some(Box::new(Single::new(Card::new(v, s))))
+    }
+
+    #[test]
+    fn test_state_setup() {
+        let mut rng = rng::get_seeded_rng([0; 32]);
+        let mut g = Game::default();
+        g.init_deck();
+        g.shuffle_deck(&mut rng);
+        g.deal_hands();
+        g.deal_floor();
+
+        assert_eq!(
+            g.opponent,
+            Player::new([
+                single(Value::Ace, Suit::Hearts),
+                single(Value::King, Suit::Clubs),
+                single(Value::Two, Suit::Diamonds),
+                single(Value::Ace, Suit::Clubs),
+                single(Value::Seven, Suit::Clubs),
+                single(Value::Eight, Suit::Spades),
+                single(Value::King, Suit::Hearts),
+                single(Value::Three, Suit::Spades),
+            ])
+        );
+
+        assert_eq!(
+            g.dealer,
+            Player::new([
+                single(Value::Ten, Suit::Diamonds),
+                single(Value::Four, Suit::Hearts),
+                single(Value::Ten, Suit::Spades),
+                single(Value::Five, Suit::Spades),
+                single(Value::Three, Suit::Diamonds),
+                single(Value::Five, Suit::Clubs),
+                single(Value::Six, Suit::Spades),
+                single(Value::Jack, Suit::Hearts),
+            ])
+        );
+
+        assert_eq!(
+            g.floor,
+            [
+                single(Value::Four, Suit::Clubs),
+                single(Value::Seven, Suit::Diamonds),
+                single(Value::Two, Suit::Spades),
+                single(Value::Eight, Suit::Clubs),
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None
+            ]
+        );
     }
 }
