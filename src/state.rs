@@ -1,7 +1,7 @@
 use crate::action::Action;
-use crate::card::{Card, Value};
+use crate::card::Card;
 use crate::rng::{ChaCha20Rng, SliceRandom};
-use crate::sets::{Set, SetError, Single};
+use crate::sets::{Set, Single};
 use std::collections::{HashSet, VecDeque};
 
 pub type Pile = Option<Box<dyn Set>>;
@@ -43,28 +43,23 @@ impl Game {
 
     /// Deal eight cards to each player
     pub fn deal_hands(&mut self) {
-        for i in 0..16 {
-            if i % 2 == 0 {
-                self.opponent.hand[i / 2] = self.deal_pile();
-            } else {
-                self.dealer.hand[(i - 1) / 2] = self.deal_pile();
-            }
+        for i in 0..8 {
+            self.opponent.hand[i] = self.deal_pile();
+            self.dealer.hand[i] = self.deal_pile();
         }
     }
 
     /// Check if the floor contains only unique values
-    pub fn unique_floor(&self) -> Result<bool, SetError> {
+    pub fn unique_floor(&self) -> bool {
         let mut unique = HashSet::new();
-        match self
-            .floor
+        self.floor
             .iter()
             .filter(|x| x.is_some())
             .map(|x| x.as_ref().unwrap().to_value())
-            .collect::<Result<Vec<Value>, SetError>>()
-        {
-            Err(e) => Err(e),
-            Ok(values) => Ok(values.iter().all(|v| unique.insert(v))),
-        }
+            .all(|v| match v {
+                Err(_) => false,
+                Ok(v) => unique.insert(v),
+            })
     }
 
     /// Deal four unique cards to the floor
@@ -72,7 +67,7 @@ impl Game {
         for i in 0..4 {
             while let None = self.floor[i] {
                 self.floor[i] = self.deal_pile();
-                if let Ok(false) = self.unique_floor() {
+                if !self.unique_floor() {
                     for c in self.floor[i].as_ref().unwrap().to_cards() {
                         self.deck.push_back(c);
                     }
