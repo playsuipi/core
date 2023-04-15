@@ -3,6 +3,8 @@
 pub enum ParsingError {
     InvalidByte,
     InvalidAddress,
+    InvalidOperationCharacter,
+    InvalidAddressCharacter,
 }
 
 /// A pile address
@@ -83,6 +85,50 @@ impl Move {
     }
 }
 
+/// A Suipi annotation representing a move
+pub struct Annotation {
+    pub value: String,
+}
+
+impl Annotation {
+    /// Get an Annotation from a string
+    pub fn new(v: String) -> Annotation {
+        Annotation { value: v }
+    }
+
+    /// Get the value as a vector of bytes
+    fn bytes(&self) -> Vec<u8> {
+        match self.value.as_bytes()[0] as char {
+            '!' | '*' => self.value.as_bytes().to_vec(),
+            _ => [['!' as u8].as_slice(), self.value.as_bytes()].concat(),
+        }
+    }
+
+    /// Convert an annotation to action bytes
+    pub fn to_bytes(&self) -> Result<Vec<u8>, ParsingError> {
+        self.bytes()
+            .windows(2)
+            .step_by(2)
+            .map(|x| {
+                Ok(match x[0] as char {
+                    '!' | '&' => Ok(0),
+                    '*' | '+' => Ok(32),
+                    _ => Err(ParsingError::InvalidOperationCharacter),
+                }? + match x[1] as char {
+                    '0'..='9' => Ok(x[1] - '0' as u8),
+                    'A'..='M' => Ok(x[1] - 'A' as u8 + 10),
+                    _ => Err(ParsingError::InvalidAddressCharacter),
+                }?)
+            })
+            .collect::<Result<Vec<u8>, ParsingError>>()
+    }
+
+    /// Convert an annotation to a move
+    pub fn to_move(&self) -> Result<Move, ParsingError> {
+        Move::from_bytes(self.to_bytes()?)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -91,7 +137,7 @@ mod tests {
     const P: u8 = 0;
 
     #[test]
-    fn test_from_bytes() {
+    fn test_move_from_bytes() {
         assert_eq!(
             Move::from_bytes(vec![P + 1]),
             Ok(Move::new(vec![Action::new(
@@ -122,7 +168,7 @@ mod tests {
     }
 
     #[test]
-    fn test_from_bytes_error() {
+    fn test_move_from_bytes_error() {
         assert_eq!(
             Move::from_bytes(vec![P + 10, 64]),
             Err(ParsingError::InvalidByte)
@@ -131,6 +177,73 @@ mod tests {
         assert_eq!(
             Move::from_bytes(vec![100, 101, 102]),
             Err(ParsingError::InvalidByte)
+        );
+    }
+
+    #[test]
+    fn test_annotation_to_bytes() {
+        assert_eq!(
+            Annotation::new(String::from("!1")).to_bytes(),
+            Ok(vec![P + 1])
+        );
+
+        assert_eq!(
+            Annotation::new(String::from("*1&A")).to_bytes(),
+            Ok(vec![A + 1, P + 10])
+        );
+
+        assert_eq!(
+            Annotation::new(String::from("A+B+C&D+E&1")).to_bytes(),
+            Ok(vec![P + 10, A + 11, A + 12, P + 13, A + 14, P + 1])
+        );
+    }
+
+    #[test]
+    fn test_annotation_to_bytes_error() {
+        assert_eq!(
+            Annotation::new(String::from("!1A1")).to_bytes(),
+            Err(ParsingError::InvalidOperationCharacter),
+        );
+
+        assert_eq!(
+            Annotation::new(String::from("!1&!")).to_bytes(),
+            Err(ParsingError::InvalidAddressCharacter),
+        );
+
+        assert_eq!(
+            Annotation::new(String::from("?")).to_bytes(),
+            Err(ParsingError::InvalidAddressCharacter),
+        );
+    }
+
+    #[test]
+    fn test_annotation_to_move() {
+        assert_eq!(
+            Annotation::new(String::from("!1")).to_move(),
+            Ok(Move::new(vec![Action::new(
+                Operation::Passive,
+                Address::Hand(0)
+            )]))
+        );
+
+        assert_eq!(
+            Annotation::new(String::from("*1&A")).to_move(),
+            Ok(Move::new(vec![
+                Action::new(Operation::Active, Address::Hand(0)),
+                Action::new(Operation::Passive, Address::Floor(0)),
+            ]))
+        );
+
+        assert_eq!(
+            Annotation::new(String::from("A+B+C&D+E&1")).to_move(),
+            Ok(Move::new(vec![
+                Action::new(Operation::Passive, Address::Floor(0)),
+                Action::new(Operation::Active, Address::Floor(1)),
+                Action::new(Operation::Active, Address::Floor(2)),
+                Action::new(Operation::Passive, Address::Floor(3)),
+                Action::new(Operation::Active, Address::Floor(4)),
+                Action::new(Operation::Passive, Address::Hand(0)),
+            ]))
         );
     }
 }
