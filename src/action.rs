@@ -23,7 +23,7 @@ pub enum Operation {
     Active,  // Trigger a change in value or score
 }
 
-/// A single atomic Suipi action
+/// A single atomic action
 #[derive(Debug, PartialEq, Eq)]
 pub struct Action {
     pub operation: Operation,
@@ -63,7 +63,7 @@ impl Action {
     }
 }
 
-/// A Suipi move comprised of sequential actions
+/// A move comprised of sequential actions
 #[derive(Debug, PartialEq, Eq)]
 pub struct Move {
     pub actions: Vec<Action>,
@@ -85,7 +85,7 @@ impl Move {
     }
 }
 
-/// A Suipi annotation representing a move
+/// An annotation representing a move
 pub struct Annotation {
     pub value: String,
 }

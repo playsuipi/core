@@ -63,7 +63,7 @@ impl PileHelper for Pile {
     }
 }
 
-/// A Suipi player's state
+/// The state of a player
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct Player {
     pub hand: [Pile; 8],
@@ -85,7 +85,7 @@ impl Player {
     }
 }
 
-/// A Suipi game's state
+/// The state of a game
 #[derive(Debug, Default)]
 pub struct Game {
     pub deck: VecDeque<Card>,
@@ -169,7 +169,7 @@ impl Game {
         }
     }
 
-    /// Apply a Suipi move to the game state
+    /// Apply a move to the game state
     pub fn apply(&mut self, m: Move) {
         for a in m.actions {
             match a.operation {
