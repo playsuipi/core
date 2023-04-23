@@ -32,7 +32,7 @@ pub struct Action {
 
 impl Action {
     /// Get an action from an operation and an address
-    fn new(o: Operation, a: Address) -> Action {
+    pub fn new(o: Operation, a: Address) -> Action {
         Action {
             operation: o,
             address: a,

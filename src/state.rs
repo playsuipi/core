@@ -1,10 +1,67 @@
-use crate::action::Move;
-use crate::card::Card;
+use crate::action::{Address, Move, Operation};
+use crate::card::{Card, Value};
 use crate::rng::{ChaCha20Rng, SliceRandom};
-use crate::sets::{Set, Single};
+use crate::sets::{Set, SetError, Single};
+use std::cell::RefCell;
 use std::collections::{HashSet, VecDeque};
 
-pub type Pile = Option<Box<dyn Set>>;
+/// A pile of cards
+pub type Pile = RefCell<Option<Box<dyn Set>>>;
+
+/// Helper methods for piles
+pub trait PileHelper {
+    /// Get a pile from an optional set
+    fn new(v: Option<Box<dyn Set>>) -> Pile;
+
+    /// Get an empty pile
+    fn empty() -> Pile;
+
+    /// Get a pile from a single card
+    fn single(card: Card) -> Pile;
+
+    /// Check if the pile is empty
+    fn is_empty(&self) -> bool;
+
+    /// Get all the cards in the pile
+    fn to_cards(&self) -> Vec<Card>;
+
+    /// Get the value of the pile
+    fn to_value(&self) -> Result<Value, SetError>;
+}
+
+impl PileHelper for Pile {
+    fn new(v: Option<Box<dyn Set>>) -> Pile {
+        RefCell::new(v)
+    }
+
+    fn empty() -> Pile {
+        Pile::default()
+    }
+
+    fn single(card: Card) -> Pile {
+        Pile::new(Some(Box::new(Single::new(card))))
+    }
+
+    fn is_empty(&self) -> bool {
+        self.borrow().is_none()
+    }
+
+    fn to_cards(&self) -> Vec<Card> {
+        if self.is_empty() {
+            vec![]
+        } else {
+            self.borrow().as_ref().unwrap().to_cards()
+        }
+    }
+
+    fn to_value(&self) -> Result<Value, SetError> {
+        if self.is_empty() {
+            Err(SetError::TooFewCards)
+        } else {
+            self.borrow().as_ref().unwrap().to_value()
+        }
+    }
+}
 
 /// A Suipi player's state
 #[derive(Debug, Default, Eq, PartialEq)]
@@ -17,6 +74,14 @@ impl Player {
     /// Get a new player from 8 piles
     pub fn new(h: [Pile; 8]) -> Player {
         Player { hand: h }
+    }
+
+    /// Get the cards in the players hand
+    pub fn cards(&self) -> Vec<Card> {
+        self.hand
+            .iter()
+            .flat_map(|x| x.to_cards().into_iter())
+            .collect()
     }
 }
 
@@ -45,8 +110,8 @@ impl Game {
     /// Deal a single card from the deck
     pub fn deal_pile(&mut self) -> Pile {
         match self.deck.pop_front() {
-            None => None,
-            Some(card) => Some(Box::new(Single::new(card))),
+            None => Pile::empty(),
+            Some(card) => Pile::single(card),
         }
     }
 
@@ -63,8 +128,8 @@ impl Game {
         let mut unique = HashSet::new();
         self.floor
             .iter()
-            .filter(|x| x.is_some())
-            .map(|x| x.as_ref().unwrap().to_value())
+            .filter(|x| !x.is_empty())
+            .map(|x| x.to_value())
             .all(|v| match v {
                 Err(_) => false,
                 Ok(v) => unique.insert(v),
@@ -74,42 +139,81 @@ impl Game {
     /// Deal four unique cards to the floor
     pub fn deal_floor(&mut self) {
         for i in 0..4 {
-            while let None = self.floor[i] {
+            while self.floor[i].is_empty() {
                 self.floor[i] = self.deal_pile();
                 if !self.unique_floor() {
-                    for c in self.floor[i].as_ref().unwrap().to_cards() {
+                    for c in self.floor[i].to_cards() {
                         self.deck.push_back(c);
                     }
-                    self.floor[i] = None;
+                    self.floor[i] = Pile::empty();
                 }
+            }
+        }
+    }
+
+    /// Get the player for the current turn
+    fn player(&self) -> &Player {
+        if self.dealer.cards().len() > self.opponent.cards().len() {
+            &self.dealer
+        } else {
+            &self.opponent
+        }
+    }
+
+    /// Discard to the floor from the player's hand
+    fn discard(&mut self, index: usize) {
+        if let Some(set) = self.player().hand[index].take() {
+            if let Some(j) = self.floor.iter().position(|x| x.is_empty()) {
+                self.floor[j].replace(Some(set));
             }
         }
     }
 
     /// Apply a Suipi move to the game state
     pub fn apply(&mut self, m: Move) {
-        println!("Action: {:#?}", m);
+        for a in m.actions {
+            match a.operation {
+                Operation::Passive => match a.address {
+                    Address::Hand(x) => self.discard(x.into()),
+                    _ => {}
+                },
+                Operation::Active => {}
+            }
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::action::{Action, Address, Operation};
     use crate::card::{Suit, Value};
     use crate::rng;
 
-    fn single(v: Value, s: Suit) -> Pile {
-        Some(Box::new(Single::new(Card::new(v, s))))
-    }
-
-    #[test]
-    fn test_state_setup() {
+    /// Setup an initial game state
+    fn setup() -> Game {
         let mut rng = rng::get_seeded_rng([0; 32]);
         let mut g = Game::default();
         g.init_deck();
         g.shuffle_deck(&mut rng);
         g.deal_hands();
         g.deal_floor();
+        g
+    }
+
+    /// Helper for populating a pile with a single
+    fn single(v: Value, s: Suit) -> Pile {
+        Pile::single(Card::new(v, s))
+    }
+
+    /// Helper for getting an empty pile
+    fn empty() -> Pile {
+        Pile::empty()
+    }
+
+    #[test]
+    fn test_state_setup() {
+        let g = setup();
 
         assert_eq!(
             g.opponent,
@@ -146,15 +250,57 @@ mod tests {
                 single(Value::Seven, Suit::Diamonds),
                 single(Value::Two, Suit::Spades),
                 single(Value::Eight, Suit::Clubs),
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty()
+            ]
+        );
+    }
+
+    #[test]
+    fn test_apply_move() {
+        let mut g = setup();
+        g.apply(Move::new(vec![Action::new(
+            Operation::Passive,
+            Address::Hand(0),
+        )]));
+
+        assert_eq!(
+            g.opponent,
+            Player::new([
+                empty(),
+                single(Value::King, Suit::Clubs),
+                single(Value::Two, Suit::Diamonds),
+                single(Value::Ace, Suit::Clubs),
+                single(Value::Seven, Suit::Clubs),
+                single(Value::Eight, Suit::Spades),
+                single(Value::King, Suit::Hearts),
+                single(Value::Three, Suit::Spades),
+            ])
+        );
+
+        assert_eq!(
+            g.floor,
+            [
+                single(Value::Four, Suit::Clubs),
+                single(Value::Seven, Suit::Diamonds),
+                single(Value::Two, Suit::Spades),
+                single(Value::Eight, Suit::Clubs),
+                single(Value::Ace, Suit::Hearts),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty()
             ]
         );
     }
