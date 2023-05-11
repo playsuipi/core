@@ -1,7 +1,7 @@
 use crate::action::{Address, Move, Operation};
 use crate::card::{Card, Value};
 use crate::rng::{ChaCha20Rng, SliceRandom};
-use crate::sets::{Set, SetError, Single};
+use crate::sets::{Build, Set, SetError, Single};
 use std::cell::RefCell;
 use std::collections::{HashSet, VecDeque};
 
@@ -169,6 +169,35 @@ impl Game {
         }
     }
 
+    /// Get a pile from a floor or hand address
+    fn to_pile(&self, a: &Address) -> Option<&Pile> {
+        match a {
+            &Address::Hand(x) => Some(&self.player().hand[x as usize]),
+            &Address::Floor(x) => Some(&self.floor[x as usize]),
+            _ => None,
+        }
+    }
+
+    /// Take a pile from a floor or hand address
+    fn take_pile(&self, a: &Address) -> Option<Box<dyn Set>> {
+        if let Some(x) = self.to_pile(a) {
+            x.take()
+        } else {
+            None
+        }
+    }
+
+    /// Build two piles into a combined stack
+    pub fn build(&mut self, bottom: &Address, top: &Address) {
+        let a = self.take_pile(bottom);
+        let b = self.take_pile(top);
+        if a.is_some() && b.is_some() {
+            if let Ok(x) = Build::build(a.unwrap(), b.unwrap()) {
+                self.to_pile(bottom).unwrap().replace(Some(Box::new(x)));
+            }
+        }
+    }
+
     /// Apply a move to the game state
     pub fn apply(&mut self, m: Move) {
         for a in m.actions {
@@ -293,6 +322,35 @@ mod tests {
                 single(Value::Two, Suit::Spades),
                 single(Value::Eight, Suit::Clubs),
                 single(Value::Ace, Suit::Hearts),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty()
+            ]
+        );
+    }
+
+    #[test]
+    fn test_build_method() {
+        let mut g = setup();
+
+        g.build(&Address::Floor(0), &Address::Floor(2));
+
+        assert_eq!(
+            g.floor,
+            [
+                Pile::new(Some(Box::new(Build::new(vec![
+                    Card::new(Value::Four, Suit::Clubs),
+                    Card::new(Value::Two, Suit::Spades),
+                ])))),
+                single(Value::Seven, Suit::Diamonds),
+                empty(),
+                single(Value::Eight, Suit::Clubs),
+                empty(),
                 empty(),
                 empty(),
                 empty(),
