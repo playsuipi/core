@@ -1,6 +1,14 @@
 use crate::card::{Card, CardError, Value};
 use std::fmt;
 
+/// Set types
+pub enum SetType {
+    Single,
+    Build,
+    Group,
+    Pair,
+}
+
 /// Set value errors
 #[derive(Debug, PartialEq)]
 pub enum SetError {
@@ -9,6 +17,7 @@ pub enum SetError {
     ValueTooLow,
     ValueMismatch,
     InvalidCard(CardError),
+    InvalidSet,
 }
 
 /// Set of cards with a specific relationship
@@ -18,6 +27,9 @@ pub trait Set {
 
     /// Get the calculated value of the set
     fn to_value(&self) -> Result<Value, SetError>;
+
+    /// Get the type of a set
+    fn to_type(&self) -> SetType;
 }
 
 impl fmt::Debug for dyn Set + 'static {
@@ -41,9 +53,6 @@ impl PartialEq for dyn Set + 'static {
     }
 }
 impl Eq for dyn Set + 'static {}
-
-/// Set of cards that can be used in a build
-pub trait Buildable: Set {}
 
 // =====================
 // == Single Card Set ==
@@ -70,8 +79,11 @@ impl Set for Single {
     fn to_value(&self) -> Result<Value, SetError> {
         Ok(self.card.value)
     }
+
+    fn to_type(&self) -> SetType {
+        SetType::Single
+    }
 }
-impl Buildable for Single {}
 
 // =====================
 // == Build Cards Set ==
@@ -89,14 +101,27 @@ impl Build {
         Build { cards: xs }
     }
 
+    /// Check if a set may be used in a build
+    pub fn buildable(x: &dyn Set) -> bool {
+        match x.to_type() {
+            SetType::Single => true,
+            SetType::Build => true,
+            _ => false,
+        }
+    }
+
     /// Get a build from two buildable sets
-    pub fn build(a: Box<&dyn Buildable>, b: Box<&dyn Buildable>) -> Build {
-        Build::new(
-            a.to_cards()
-                .into_iter()
-                .chain(b.to_cards().into_iter())
-                .collect::<Vec<Card>>(),
-        )
+    pub fn build(a: Box<dyn Set>, b: Box<dyn Set>) -> Result<Build, SetError> {
+        if Build::buildable(a.as_ref()) && Build::buildable(b.as_ref()) {
+            Ok(Build::new(
+                a.to_cards()
+                    .into_iter()
+                    .chain(b.to_cards().into_iter())
+                    .collect::<Vec<Card>>(),
+            ))
+        } else {
+            Err(SetError::InvalidSet)
+        }
     }
 }
 
@@ -119,8 +144,11 @@ impl Set for Build {
             }
         }
     }
+
+    fn to_type(&self) -> SetType {
+        SetType::Build
+    }
 }
-impl Buildable for Build {}
 
 // =====================
 // == Group Cards Set ==
@@ -189,6 +217,10 @@ impl Set for Group {
             Err(e) => Err(e),
         }
     }
+
+    fn to_type(&self) -> SetType {
+        SetType::Group
+    }
 }
 
 // ====================
@@ -223,6 +255,10 @@ impl Set for Pair {
         } else {
             Err(SetError::ValueMismatch)
         }
+    }
+
+    fn to_type(&self) -> SetType {
+        SetType::Pair
     }
 }
 
@@ -381,10 +417,11 @@ mod tests {
             Card::new(Value::Three, Suit::Spades),
         ];
         let b = Build::build(
-            Box::new(&Single::new(xs[0])),
-            Box::new(&Build::new(vec![xs[1], xs[2]])),
+            Box::new(Single::new(xs[0])),
+            Box::new(Build::new(vec![xs[1], xs[2]])),
         );
-        validate_set(Box::new(b), xs, Ok(Value::Ten));
+        assert_eq!(b.is_ok(), true);
+        validate_set(Box::new(b.unwrap()), xs, Ok(Value::Ten));
     }
 
     #[test]
