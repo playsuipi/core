@@ -1,4 +1,4 @@
-/// Byte parsing error
+/// Byte parsing errors
 #[derive(Debug, PartialEq, Eq)]
 pub enum ParsingError {
     InvalidByte,
@@ -8,7 +8,7 @@ pub enum ParsingError {
 }
 
 /// A pile address
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Address {
     Pair,      // Smart pile for auto-pairing
     Hand(u8),  // Address of a pile in your hand
@@ -17,14 +17,14 @@ pub enum Address {
 }
 
 /// The type of action
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Operation {
     Passive, // Simple card movement between piles
     Active,  // Trigger a change in value or score
 }
 
-/// A single atomic action
-#[derive(Debug, PartialEq, Eq)]
+/// A single composable action
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Action {
     pub operation: Operation,
     pub address: Address,
