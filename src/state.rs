@@ -9,7 +9,7 @@ use std::collections::{HashSet, VecDeque};
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct Player {
     pub hand: [RefCell<Pile>; 8],
-    pub pairs: Vec<Pile>,
+    pub pairs: RefCell<Vec<Pile>>,
 }
 
 impl Player {
@@ -17,7 +17,7 @@ impl Player {
     pub fn new(hand: [RefCell<Pile>; 8]) -> Player {
         Player {
             hand,
-            pairs: vec![],
+            pairs: RefCell::new(vec![]),
         }
     }
 
@@ -131,6 +131,30 @@ impl Game {
         }
     }
 
+    /// Group two piles from two addresses
+    pub fn group(&mut self, a: Address, b: Address) {
+        if let Some((mut x, mut y)) = self.take_piles(a, b) {
+            if let Ok(z) = Pile::group(&mut x, &mut y) {
+                self.pile(a).unwrap().replace(z);
+            } else {
+                self.pile(a).unwrap().replace(x);
+                self.pile(b).unwrap().replace(y);
+            }
+        }
+    }
+
+    /// Pair a pile with a capturing card
+    pub fn pair(&mut self, a: Address, b: Address) {
+        if let Some((mut x, mut y)) = self.take_piles(a, b) {
+            if let Ok(z) = Pile::pair(&mut x, &mut y) {
+                self.player().pairs.borrow_mut().push(z);
+            } else {
+                self.pile(a).unwrap().replace(x);
+                self.pile(b).unwrap().replace(y);
+            }
+        }
+    }
+
     /// Apply a move to the game state
     pub fn apply(&mut self, m: Move) {
         for w in m.actions.windows(2).rev() {
@@ -161,6 +185,16 @@ mod tests {
         g.deal_hands();
         g.deal_floor();
         g
+    }
+
+    /// Helper for populating a pile with a pair
+    fn pair(xs: Vec<Card>, v: Value) -> Pile {
+        Pile::new(xs, v as u8, Mark::Pair)
+    }
+
+    /// Helper for populating a pile with a group
+    fn group(xs: Vec<Card>, v: Value) -> RefCell<Pile> {
+        RefCell::new(Pile::new(xs, v as u8, Mark::Group))
     }
 
     /// Helper for populating a pile with a build
@@ -307,6 +341,81 @@ mod tests {
                 empty(),
                 empty()
             ]
+        );
+    }
+
+    #[test]
+    fn test_group_method() {
+        let mut g = setup();
+
+        g.build(Address::Floor(0), Address::Hand(7));
+        g.group(Address::Floor(0), Address::Floor(1));
+
+        assert_eq!(
+            g.floor,
+            [
+                group(
+                    vec![
+                        Card::create(Value::Four, Suit::Clubs),
+                        Card::create(Value::Three, Suit::Spades),
+                        Card::create(Value::Seven, Suit::Diamonds),
+                    ],
+                    Value::Seven
+                ),
+                empty(),
+                single(Value::Two, Suit::Spades),
+                single(Value::Eight, Suit::Clubs),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty()
+            ]
+        );
+    }
+
+    #[test]
+    fn test_pair_method() {
+        let mut g = setup();
+
+        g.build(Address::Floor(0), Address::Hand(7));
+        g.group(Address::Floor(0), Address::Floor(1));
+        g.pair(Address::Floor(0), Address::Hand(4));
+
+        assert_eq!(
+            g.floor,
+            [
+                empty(),
+                empty(),
+                single(Value::Two, Suit::Spades),
+                single(Value::Eight, Suit::Clubs),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty()
+            ]
+        );
+
+        assert_eq!(
+            g.opponent.pairs.take(),
+            vec![pair(
+                vec![
+                    Card::create(Value::Four, Suit::Clubs),
+                    Card::create(Value::Three, Suit::Spades),
+                    Card::create(Value::Seven, Suit::Diamonds),
+                    Card::create(Value::Seven, Suit::Clubs),
+                ],
+                Value::Seven
+            )]
         );
     }
 }
