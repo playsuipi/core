@@ -157,9 +157,16 @@ impl Game {
 
     /// Apply a move to the game state
     pub fn apply(&mut self, m: Move) {
-        for w in m.actions.windows(2).rev() {
+        let last_window = (m.actions.len() - 1) / 2;
+        for (i, w) in m.actions.windows(2).rev().enumerate() {
             match w[1].operation {
-                Operation::Passive => {}
+                Operation::Passive => {
+                    if i == last_window && w[0].operation == Operation::Active {
+                        self.pair(w[1].address, w[0].address);
+                    } else {
+                        self.group(w[0].address, w[1].address);
+                    }
+                }
                 Operation::Active => {
                     self.build(w[0].address, w[1].address);
                 }
@@ -268,36 +275,30 @@ mod tests {
     fn test_apply_move() {
         let mut g = setup();
         g.apply(Move::new(vec![
-            Action::new(Operation::Passive, Address::Floor(0)),
-            Action::new(Operation::Active, Address::Hand(0)),
+            Action::new(Operation::Active, Address::Floor(2)),
+            Action::new(Operation::Passive, Address::Hand(2)),
         ]));
 
         assert_eq!(
-            g.opponent,
-            Player::new([
-                empty(),
+            g.opponent.hand,
+            [
+                single(Value::Ace, Suit::Hearts),
                 single(Value::King, Suit::Clubs),
-                single(Value::Two, Suit::Diamonds),
+                empty(),
                 single(Value::Ace, Suit::Clubs),
                 single(Value::Seven, Suit::Clubs),
                 single(Value::Eight, Suit::Spades),
                 single(Value::King, Suit::Hearts),
                 single(Value::Three, Suit::Spades),
-            ])
+            ]
         );
 
         assert_eq!(
             g.floor,
             [
-                build(
-                    vec![
-                        Card::create(Value::Four, Suit::Clubs),
-                        Card::create(Value::Ace, Suit::Hearts),
-                    ],
-                    Value::Five
-                ),
+                single(Value::Four, Suit::Clubs),
                 single(Value::Seven, Suit::Diamonds),
-                single(Value::Two, Suit::Spades),
+                empty(),
                 single(Value::Eight, Suit::Clubs),
                 empty(),
                 empty(),
@@ -309,6 +310,17 @@ mod tests {
                 empty(),
                 empty()
             ]
+        );
+
+        assert_eq!(
+            g.opponent.pairs.take(),
+            vec![pair(
+                vec![
+                    Card::create(Value::Two, Suit::Diamonds),
+                    Card::create(Value::Two, Suit::Spades),
+                ],
+                Value::Two
+            )]
         );
     }
 
