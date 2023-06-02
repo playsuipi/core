@@ -23,7 +23,7 @@ impl Player {
 
     /// Get the number of cards in a player's hand
     pub fn card_count(&self) -> usize {
-        self.hand.iter().filter(|x| x.borrow().is_empty()).count()
+        self.hand.iter().filter(|x| !x.borrow().is_empty()).count()
     }
 }
 
@@ -34,6 +34,7 @@ pub struct Game {
     pub floor: [RefCell<Pile>; 13],
     pub dealer: Player,
     pub opponent: Player,
+    pub turn: bool,
 }
 
 impl Game {
@@ -95,7 +96,7 @@ impl Game {
 
     /// Get the player for the current turn
     pub fn player(&self) -> &Player {
-        if self.dealer.card_count() > self.opponent.card_count() {
+        if self.turn {
             &self.dealer
         } else {
             &self.opponent

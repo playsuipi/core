@@ -5,6 +5,7 @@ pub enum ParsingError {
     InvalidAddress,
     InvalidOperationCharacter,
     InvalidAddressCharacter,
+    BlankAnnotation,
 }
 
 /// A pile address
@@ -98,29 +99,37 @@ impl Annotation {
 
     /// Get the value as a vector of bytes
     fn bytes(&self) -> Vec<u8> {
-        match self.value.as_bytes()[0] as char {
-            '!' | '*' => self.value.as_bytes().to_vec(),
-            _ => [['!' as u8].as_slice(), self.value.as_bytes()].concat(),
+        if self.value.len() > 0 {
+            match self.value.as_bytes()[0] as char {
+                '!' | '*' => self.value.as_bytes().to_vec(),
+                _ => [['!' as u8].as_slice(), self.value.as_bytes()].concat(),
+            }
+        } else {
+            vec![]
         }
     }
 
     /// Convert an annotation to action bytes
     pub fn to_bytes(&self) -> Result<Vec<u8>, ParsingError> {
-        self.bytes()
-            .windows(2)
-            .step_by(2)
-            .map(|x| {
-                Ok(match x[0] as char {
-                    '!' | '&' => Ok(0),
-                    '*' | '+' => Ok(32),
-                    _ => Err(ParsingError::InvalidOperationCharacter),
-                }? + match x[1] as char {
-                    '0'..='9' => Ok(x[1] - '0' as u8),
-                    'A'..='M' => Ok(x[1] - 'A' as u8 + 10),
-                    _ => Err(ParsingError::InvalidAddressCharacter),
-                }?)
-            })
-            .collect::<Result<Vec<u8>, ParsingError>>()
+        if self.bytes().len() > 0 {
+            self.bytes()
+                .windows(2)
+                .step_by(2)
+                .map(|x| {
+                    Ok(match x[0] as char {
+                        '!' | '&' => Ok(0),
+                        '*' | '+' => Ok(32),
+                        _ => Err(ParsingError::InvalidOperationCharacter),
+                    }? + match x[1] as char {
+                        '0'..='9' => Ok(x[1] - '0' as u8),
+                        'A'..='M' => Ok(x[1] - 'A' as u8 + 10),
+                        _ => Err(ParsingError::InvalidAddressCharacter),
+                    }?)
+                })
+                .collect::<Result<Vec<u8>, ParsingError>>()
+        } else {
+            Err(ParsingError::BlankAnnotation)
+        }
     }
 
     /// Convert an annotation to a move
@@ -213,6 +222,11 @@ mod tests {
         assert_eq!(
             Annotation::new(String::from("?")).to_bytes(),
             Err(ParsingError::InvalidAddressCharacter),
+        );
+
+        assert_eq!(
+            Annotation::new(String::from("")).to_bytes(),
+            Err(ParsingError::BlankAnnotation),
         );
     }
 

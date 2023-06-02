@@ -1,4 +1,5 @@
 use crate::card::Card;
+use std::fmt;
 
 /// Pile manipulation errors
 #[derive(Debug, Eq, PartialEq)]
@@ -108,6 +109,18 @@ impl Pile {
         assert_eq!(x.value, y.value); // Mismatched value
         assert!(Pile::pairable(y)); // Invalid right arg
         Ok(Pile::new(Pile::cards(x, y), x.value, Mark::Pair))
+    }
+}
+
+impl fmt::Display for Pile {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.mark {
+            Mark::Empty => write!(f, "___"),
+            Mark::Single => write!(f, "{}", self.cards.first().unwrap()),
+            Mark::Build => write!(f, "B{{{}}}", self.value),
+            Mark::Group => write!(f, "G[{}]", self.value),
+            Mark::Pair => write!(f, "P<{}>", self.value),
+        }
     }
 }
 
