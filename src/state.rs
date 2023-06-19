@@ -1,6 +1,6 @@
 use crate::action::{Address, Move, Operation};
 use crate::card::Card;
-use crate::pile::Pile;
+use crate::pile::{Pile, PileError};
 use crate::rng::{ChaCha20Rng, SliceRandom};
 use std::cell::RefCell;
 use std::collections::{HashSet, VecDeque};
@@ -8,10 +8,8 @@ use std::collections::{HashSet, VecDeque};
 /// State manipulation errors
 pub enum StateError {
     InvalidAddress,
-    InvalidBuild,
     InvalidDiscard,
-    InvalidGroup,
-    InvalidPair,
+    InvalidPile(PileError),
     FloorIsFull,
     PileIsNotEmpty,
 }
@@ -177,52 +175,51 @@ impl Game {
         }
     }
 
-    /// Build a pile from two addresses
-    pub fn build(&mut self, a: Address, b: Address) -> Result<(), StateError> {
-        if let (Some(mut x), Some(mut y)) = (self.take(a), self.take(b)) {
-            if let Ok(z) = Pile::build(&mut x, &mut y) {
-                self.pile(a).unwrap().replace(z);
-                Ok(())
-            } else {
-                self.pile(a).unwrap().replace(x);
-                self.pile(b).unwrap().replace(y);
-                Err(StateError::InvalidBuild)
+    /// Attempt to combine the cards from two piles
+    pub fn combine<F, G>(
+        &mut self,
+        reduce: F,
+        save: G,
+        p: (Address, Address),
+    ) -> Result<(), StateError>
+    where
+        F: FnOnce(&mut Pile, &mut Pile) -> Result<Pile, PileError>,
+        G: FnOnce(&mut Self, Pile) -> Result<(), StateError>,
+    {
+        if let (Some(mut x), Some(mut y)) = (self.take(p.0), self.take(p.1)) {
+            match reduce(&mut x, &mut y) {
+                Ok(z) => save(self, z),
+                Err(e) => {
+                    self.pile(p.0).unwrap().replace(x);
+                    self.pile(p.1).unwrap().replace(y);
+                    Err(StateError::InvalidPile(e))
+                }
             }
         } else {
             Err(StateError::InvalidAddress)
         }
+    }
+
+    /// Build a pile from two addresses
+    pub fn build(&mut self, a: Address, b: Address) -> Result<(), StateError> {
+        self.combine(Pile::build, |g, z| Ok(g.replace(a, z)?), (a, b))
     }
 
     /// Group two piles from two addresses
     pub fn group(&mut self, a: Address, b: Address) -> Result<(), StateError> {
-        if let (Some(mut x), Some(mut y)) = (self.take(a), self.take(b)) {
-            if let Ok(z) = Pile::group(&mut x, &mut y) {
-                self.pile(a).unwrap().replace(z);
-                Ok(())
-            } else {
-                self.pile(a).unwrap().replace(x);
-                self.pile(b).unwrap().replace(y);
-                Err(StateError::InvalidGroup)
-            }
-        } else {
-            Err(StateError::InvalidAddress)
-        }
+        self.combine(Pile::group, |g, z| Ok(g.replace(a, z)?), (a, b))
     }
 
     /// Pair a pile with a capturing card
     pub fn pair(&mut self, a: Address, b: Address) -> Result<(), StateError> {
-        if let (Some(mut x), Some(mut y)) = (self.take(a), self.take(b)) {
-            if let Ok(z) = Pile::pair(&mut x, &mut y) {
-                self.player().pairs.borrow_mut().push(z);
+        self.combine(
+            Pile::pair,
+            |g, z| {
+                g.player().pairs.borrow_mut().push(z);
                 Ok(())
-            } else {
-                self.pile(a).unwrap().replace(x);
-                self.pile(b).unwrap().replace(y);
-                Err(StateError::InvalidPair)
-            }
-        } else {
-            Err(StateError::InvalidAddress)
-        }
+            },
+            (a, b),
+        )
     }
 
     /// Apply a move to the game state
