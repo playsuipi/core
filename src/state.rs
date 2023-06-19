@@ -5,6 +5,14 @@ use crate::rng::{ChaCha20Rng, SliceRandom};
 use std::cell::RefCell;
 use std::collections::{HashSet, VecDeque};
 
+/// State manipulation errors
+pub enum StateError {
+    InvalidAddress,
+    InvalidDiscard,
+    FloorIsFull,
+    PileIsNotEmpty,
+}
+
 /// The state of a player
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct Player {
@@ -112,17 +120,63 @@ impl Game {
         }
     }
 
-    /// Take the values out of two piles refcells
-    pub fn take_piles(&mut self, a: Address, b: Address) -> Option<(Pile, Pile)> {
-        match (self.pile(a), self.pile(b)) {
-            (Some(x), Some(y)) => Some((x.take(), y.take())),
-            _ => None,
+    /// Take the value out of a pile if it is not empty
+    pub fn take(&mut self, a: Address) -> Option<Pile> {
+        match self.pile(a) {
+            Some(x) => {
+                if !x.borrow().is_empty() {
+                    Some(x.take())
+                } else {
+                    None
+                }
+            }
+            None => None,
+        }
+    }
+
+    /// Replace the value of an empty pile
+    pub fn replace(&mut self, a: Address, p: Pile) -> Result<(), StateError> {
+        if let Some(x) = self.pile(a) {
+            if x.borrow().is_empty() {
+                x.replace(p);
+                Ok(())
+            } else {
+                Err(StateError::PileIsNotEmpty)
+            }
+        } else {
+            Err(StateError::InvalidAddress)
+        }
+    }
+
+    /// Discard a card from your hand
+    pub fn discard(&mut self, a: Address) -> Result<(), StateError> {
+        match a {
+            Address::Hand(_) => {
+                if let Some(pile) = self.take(a) {
+                    if let Some(j) = self.floor.iter().position(|x| x.borrow().is_empty()) {
+                        self.floor[j].replace(pile);
+                        if self.unique_floor() {
+                            Ok(())
+                        } else {
+                            let v = self.floor[j].take();
+                            self.replace(a, v)?;
+                            Err(StateError::InvalidDiscard)
+                        }
+                    } else {
+                        self.replace(a, pile)?;
+                        Err(StateError::FloorIsFull)
+                    }
+                } else {
+                    Err(StateError::InvalidDiscard)
+                }
+            }
+            _ => Err(StateError::InvalidAddress),
         }
     }
 
     /// Build a pile from two addresses
     pub fn build(&mut self, a: Address, b: Address) {
-        if let Some((mut x, mut y)) = self.take_piles(a, b) {
+        if let (Some(mut x), Some(mut y)) = (self.take(a), self.take(b)) {
             if let Ok(z) = Pile::build(&mut x, &mut y) {
                 self.pile(a).unwrap().replace(z);
             } else {
@@ -134,7 +188,7 @@ impl Game {
 
     /// Group two piles from two addresses
     pub fn group(&mut self, a: Address, b: Address) {
-        if let Some((mut x, mut y)) = self.take_piles(a, b) {
+        if let (Some(mut x), Some(mut y)) = (self.take(a), self.take(b)) {
             if let Ok(z) = Pile::group(&mut x, &mut y) {
                 self.pile(a).unwrap().replace(z);
             } else {
@@ -146,7 +200,7 @@ impl Game {
 
     /// Pair a pile with a capturing card
     pub fn pair(&mut self, a: Address, b: Address) {
-        if let Some((mut x, mut y)) = self.take_piles(a, b) {
+        if let (Some(mut x), Some(mut y)) = (self.take(a), self.take(b)) {
             if let Ok(z) = Pile::pair(&mut x, &mut y) {
                 self.player().pairs.borrow_mut().push(z);
             } else {
@@ -429,6 +483,46 @@ mod tests {
                 ],
                 Value::Seven
             )]
+        );
+    }
+
+    #[test]
+    fn test_discard_method() {
+        let mut g = setup();
+
+        assert!(g.discard(Address::Hand(0)).is_ok());
+
+        assert_eq!(
+            g.opponent,
+            Player::new([
+                empty(),
+                single(Value::King, Suit::Clubs),
+                single(Value::Two, Suit::Diamonds),
+                single(Value::Ace, Suit::Clubs),
+                single(Value::Seven, Suit::Clubs),
+                single(Value::Eight, Suit::Spades),
+                single(Value::King, Suit::Hearts),
+                single(Value::Three, Suit::Spades),
+            ])
+        );
+
+        assert_eq!(
+            g.floor,
+            [
+                single(Value::Four, Suit::Clubs),
+                single(Value::Seven, Suit::Diamonds),
+                single(Value::Two, Suit::Spades),
+                single(Value::Eight, Suit::Clubs),
+                single(Value::Ace, Suit::Hearts),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty()
+            ]
         );
     }
 }
