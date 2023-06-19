@@ -8,7 +8,10 @@ use std::collections::{HashSet, VecDeque};
 /// State manipulation errors
 pub enum StateError {
     InvalidAddress,
+    InvalidBuild,
     InvalidDiscard,
+    InvalidGroup,
+    InvalidPair,
     FloorIsFull,
     PileIsNotEmpty,
 }
@@ -175,58 +178,71 @@ impl Game {
     }
 
     /// Build a pile from two addresses
-    pub fn build(&mut self, a: Address, b: Address) {
+    pub fn build(&mut self, a: Address, b: Address) -> Result<(), StateError> {
         if let (Some(mut x), Some(mut y)) = (self.take(a), self.take(b)) {
             if let Ok(z) = Pile::build(&mut x, &mut y) {
                 self.pile(a).unwrap().replace(z);
+                Ok(())
             } else {
                 self.pile(a).unwrap().replace(x);
                 self.pile(b).unwrap().replace(y);
+                Err(StateError::InvalidBuild)
             }
+        } else {
+            Err(StateError::InvalidAddress)
         }
     }
 
     /// Group two piles from two addresses
-    pub fn group(&mut self, a: Address, b: Address) {
+    pub fn group(&mut self, a: Address, b: Address) -> Result<(), StateError> {
         if let (Some(mut x), Some(mut y)) = (self.take(a), self.take(b)) {
             if let Ok(z) = Pile::group(&mut x, &mut y) {
                 self.pile(a).unwrap().replace(z);
+                Ok(())
             } else {
                 self.pile(a).unwrap().replace(x);
                 self.pile(b).unwrap().replace(y);
+                Err(StateError::InvalidGroup)
             }
+        } else {
+            Err(StateError::InvalidAddress)
         }
     }
 
     /// Pair a pile with a capturing card
-    pub fn pair(&mut self, a: Address, b: Address) {
+    pub fn pair(&mut self, a: Address, b: Address) -> Result<(), StateError> {
         if let (Some(mut x), Some(mut y)) = (self.take(a), self.take(b)) {
             if let Ok(z) = Pile::pair(&mut x, &mut y) {
                 self.player().pairs.borrow_mut().push(z);
+                Ok(())
             } else {
                 self.pile(a).unwrap().replace(x);
                 self.pile(b).unwrap().replace(y);
+                Err(StateError::InvalidPair)
             }
+        } else {
+            Err(StateError::InvalidAddress)
         }
     }
 
     /// Apply a move to the game state
-    pub fn apply(&mut self, m: Move) {
+    pub fn apply(&mut self, m: Move) -> Result<(), StateError> {
         let last_window = (m.actions.len() - 1) / 2;
         for (i, w) in m.actions.windows(2).rev().enumerate() {
             match w[1].operation {
                 Operation::Passive => {
                     if i == last_window && w[0].operation == Operation::Active {
-                        self.pair(w[1].address, w[0].address);
+                        self.pair(w[1].address, w[0].address)?;
                     } else {
-                        self.group(w[0].address, w[1].address);
+                        self.group(w[0].address, w[1].address)?;
                     }
                 }
                 Operation::Active => {
-                    self.build(w[0].address, w[1].address);
+                    self.build(w[0].address, w[1].address)?;
                 }
             }
         }
+        Ok(())
     }
 }
 
@@ -329,10 +345,13 @@ mod tests {
     #[test]
     fn test_apply_move() {
         let mut g = setup();
-        g.apply(Move::new(vec![
-            Action::new(Operation::Active, Address::Floor(2)),
-            Action::new(Operation::Passive, Address::Hand(2)),
-        ]));
+
+        assert!(g
+            .apply(Move::new(vec![
+                Action::new(Operation::Active, Address::Floor(2)),
+                Action::new(Operation::Passive, Address::Hand(2)),
+            ]))
+            .is_ok());
 
         assert_eq!(
             g.opponent.hand,
@@ -383,7 +402,7 @@ mod tests {
     fn test_build_method() {
         let mut g = setup();
 
-        g.build(Address::Floor(0), Address::Floor(2));
+        assert!(g.build(Address::Floor(0), Address::Floor(2)).is_ok());
 
         assert_eq!(
             g.floor,
@@ -415,8 +434,8 @@ mod tests {
     fn test_group_method() {
         let mut g = setup();
 
-        g.build(Address::Floor(0), Address::Hand(7));
-        g.group(Address::Floor(0), Address::Floor(1));
+        assert!(g.build(Address::Floor(0), Address::Hand(7)).is_ok());
+        assert!(g.group(Address::Floor(0), Address::Floor(1)).is_ok());
 
         assert_eq!(
             g.floor,
@@ -449,9 +468,9 @@ mod tests {
     fn test_pair_method() {
         let mut g = setup();
 
-        g.build(Address::Floor(0), Address::Hand(7));
-        g.group(Address::Floor(0), Address::Floor(1));
-        g.pair(Address::Floor(0), Address::Hand(4));
+        assert!(g.build(Address::Floor(0), Address::Hand(7)).is_ok());
+        assert!(g.group(Address::Floor(0), Address::Floor(1)).is_ok());
+        assert!(g.pair(Address::Floor(0), Address::Hand(4)).is_ok());
 
         assert_eq!(
             g.floor,
