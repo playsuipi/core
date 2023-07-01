@@ -6,6 +6,7 @@ use std::cell::RefCell;
 use std::collections::{HashSet, VecDeque};
 
 /// State manipulation errors
+#[derive(Debug)]
 pub enum StateError {
     InvalidAddress,
     InvalidDiscard,
@@ -207,38 +208,18 @@ impl Game {
     pub fn pair(&mut self, a: Address, b: Address) -> Result<(), StateError> {
         self.combine(
             Pile::pair,
-            |g, z| {
-                g.player().pairs.borrow_mut().push(z);
-                Ok(())
-            },
+            |g, z| Ok(g.player().pairs.borrow_mut().push(z)),
             (a, b),
         )
-    }
-
-    /// Attempt to discard from the first address in a move
-    pub fn apply_discard(&mut self, m: Move) -> Result<(), StateError> {
-        if let Some(x) = m.actions.first() {
-            if x.operation == Operation::Active {
-                Err(StateError::InvalidMove)
-            } else {
-                self.discard(x.address)
-            }
-        } else {
-            Err(StateError::InvalidMove)
-        }
     }
 
     /// Apply a move to the game state
     pub fn apply(&mut self, m: Move) -> Result<(), StateError> {
         if m.actions.len() == 1 {
-            self.apply_discard(m)?;
+            self.discard(m.actions[0].address)?;
         } else {
             let mut builds = vec![];
-            let mut ender = Address::Hand(0);
-            let mut pair = false;
             for w in m.actions.windows(2).rev() {
-                ender = w[0].address;
-                pair = w[0].operation == Operation::Active;
                 match w[1].operation {
                     Operation::Passive => {
                         builds.push(w[1].address);
@@ -248,11 +229,13 @@ impl Game {
                     }
                 }
             }
+            let destination = m.actions[0].address;
+            let pair = m.actions[0].operation == Operation::Active;
             for (i, b) in builds.iter().rev().enumerate() {
                 if i == builds.len() - 1 && pair {
-                    self.pair(ender, b.to_owned())?;
+                    self.pair(destination, b.to_owned())?;
                 } else {
-                    self.group(ender, b.to_owned())?;
+                    self.group(destination, b.to_owned())?;
                 }
             }
         }
