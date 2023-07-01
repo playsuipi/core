@@ -10,6 +10,7 @@ pub enum StateError {
     InvalidAddress,
     InvalidDiscard,
     InvalidPile(PileError),
+    InvalidMove,
     FloorIsFull,
     PileIsNotEmpty,
 }
@@ -222,20 +223,37 @@ impl Game {
         )
     }
 
+    /// Attempt to discard from the first address in a move
+    pub fn apply_discard(&mut self, m: Move) -> Result<(), StateError> {
+        if let Some(x) = m.actions.first() {
+            if x.operation == Operation::Active {
+                Err(StateError::InvalidMove)
+            } else {
+                self.discard(x.address)
+            }
+        } else {
+            Err(StateError::InvalidMove)
+        }
+    }
+
     /// Apply a move to the game state
     pub fn apply(&mut self, m: Move) -> Result<(), StateError> {
-        let last_window = (m.actions.len() - 1) / 2;
-        for (i, w) in m.actions.windows(2).rev().enumerate() {
-            match w[1].operation {
-                Operation::Passive => {
-                    if i == last_window && w[0].operation == Operation::Active {
-                        self.pair(w[1].address, w[0].address)?;
-                    } else {
-                        self.group(w[0].address, w[1].address)?;
+        if m.actions.len() == 1 {
+            self.apply_discard(m)?;
+        } else {
+            let last_window = (m.actions.len() - 1) / 2;
+            for (i, w) in m.actions.windows(2).rev().enumerate() {
+                match w[1].operation {
+                    Operation::Passive => {
+                        if i == last_window && w[0].operation == Operation::Active {
+                            self.pair(w[1].address, w[0].address)?;
+                        } else {
+                            self.group(w[0].address, w[1].address)?;
+                        }
                     }
-                }
-                Operation::Active => {
-                    self.build(w[0].address, w[1].address)?;
+                    Operation::Active => {
+                        self.build(w[0].address, w[1].address)?;
+                    }
                 }
             }
         }
@@ -392,6 +410,51 @@ mod tests {
                 ],
                 Value::Two
             )]
+        );
+    }
+
+    #[test]
+    fn test_apply_more_moves() {
+        let mut g = setup();
+
+        assert!(g
+            .apply(Move::new(vec![Action::new(
+                Operation::Passive,
+                Address::Hand(0)
+            )]))
+            .is_ok());
+
+        assert_eq!(
+            g.opponent,
+            Player::new([
+                empty(),
+                single(Value::King, Suit::Clubs),
+                single(Value::Two, Suit::Diamonds),
+                single(Value::Ace, Suit::Clubs),
+                single(Value::Seven, Suit::Clubs),
+                single(Value::Eight, Suit::Spades),
+                single(Value::King, Suit::Hearts),
+                single(Value::Three, Suit::Spades),
+            ])
+        );
+
+        assert_eq!(
+            g.floor,
+            [
+                single(Value::Four, Suit::Clubs),
+                single(Value::Seven, Suit::Diamonds),
+                single(Value::Two, Suit::Spades),
+                single(Value::Eight, Suit::Clubs),
+                single(Value::Ace, Suit::Hearts),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty()
+            ]
         );
     }
 
