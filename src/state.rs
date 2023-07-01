@@ -114,39 +114,31 @@ impl Game {
     }
 
     /// Get a pile reference from an address
-    pub fn pile(&self, a: Address) -> Option<&RefCell<Pile>> {
+    pub fn pile(&self, a: Address) -> &RefCell<Pile> {
         match a {
-            Address::Hand(i) => Some(&self.player().hand[i as usize]),
-            Address::Floor(j) => Some(&self.floor[j as usize]),
-            _ => None,
+            Address::Hand(i) => &self.player().hand[i as usize],
+            Address::Floor(j) => &self.floor[j as usize],
         }
     }
 
     /// Take the value out of a pile if it is not empty
     pub fn take(&mut self, a: Address) -> Option<Pile> {
-        match self.pile(a) {
-            Some(x) => {
-                if !x.borrow().is_empty() {
-                    Some(x.take())
-                } else {
-                    None
-                }
-            }
-            None => None,
+        let x = self.pile(a);
+        if !x.borrow().is_empty() {
+            Some(x.take())
+        } else {
+            None
         }
     }
 
     /// Replace the value of an empty pile
     pub fn replace(&mut self, a: Address, p: Pile) -> Result<(), StateError> {
-        if let Some(x) = self.pile(a) {
-            if x.borrow().is_empty() {
-                x.replace(p);
-                Ok(())
-            } else {
-                Err(StateError::PileIsNotEmpty)
-            }
+        let x = self.pile(a);
+        if x.borrow().is_empty() {
+            x.replace(p);
+            Ok(())
         } else {
-            Err(StateError::InvalidAddress)
+            Err(StateError::PileIsNotEmpty)
         }
     }
 
@@ -191,8 +183,8 @@ impl Game {
             match reduce(&mut x, &mut y) {
                 Ok(z) => save(self, z),
                 Err(e) => {
-                    self.pile(p.0).unwrap().replace(x);
-                    self.pile(p.1).unwrap().replace(y);
+                    self.pile(p.0).replace(x);
+                    self.pile(p.1).replace(y);
                     Err(StateError::InvalidPile(e))
                 }
             }
@@ -238,44 +230,11 @@ impl Game {
 
     /// Apply a move to the game state
     pub fn apply(&mut self, m: Move) -> Result<(), StateError> {
-        // If we just sort the actions, then theoretically this same approach will still work. So
-        // we really just need to figure out if sorting does what we want.
-        // So we have the following pairs:
-        //
-        //  - *C+D&B+E&2
-        //
-        //  - +E&2 << Store result of wherever the hell E ends up.
-        //  - &B+E << Move E to B. 7+3=10.
-        //  - +D&B << Store the result of wherever the hello D ends up.
-        //  - +C+D << Move D to C. 8+2=10.
-        //  -  C&B << D ends up at C. Move B to C.
-        //  - *C&2 << E ends up at C. Move 2 to C. Pair.
-        //
-        // Path of E:
-        //  E>B>C
-        // Path of D:
-        //  D>C
-        //
-        // Maybe we always end up at the end address? I mean if we don't then it isn't a valid
-        // move. So then the question becomes validating that everything ends up on that final
-        // address. But they don't really even have the option to change that because they just
-        // input a single address with a single operation.
-        //
-        // So I am convinced that we will always end up at the first address of the move. Which
-        // means we don't even need to keep track of where things go, we just need to go back up
-        // the stack calling group. Until we get to the last one, where we will instead call pair.
-        //
-        // Now the interesting piece of information is whether or not we are going to pair. We can
-        // find that out at the end of the iteration, or the top of the stack. So we can store
-        // that, or even find out beforehand, but then we either pair or group that final element.
-        //
-        //
-
         if m.actions.len() == 1 {
             self.apply_discard(m)?;
         } else {
             let mut builds = vec![];
-            let mut ender = Address::Pair;
+            let mut ender = Address::Hand(0);
             let mut pair = false;
             for w in m.actions.windows(2).rev() {
                 ender = w[0].address;
@@ -501,27 +460,6 @@ mod tests {
     #[test]
     fn test_apply_even_more_moves() {
         let mut g = setup();
-
-        // We want to test the relationship between builds and groups. So we want to build like two
-        // sets together, and then we want to group some of them as well. This should verify the
-        // order of operations which states that a group should never be made before all the
-        // builds. Basically we want to wrap parenthesis around the build actions, and then do a
-        // second pass which completes the group actions.
-        //
-        //
-        // --- [*] Floor: A=(4♣), B=(7♦), C=(2♠), D=(8♣), E=(___), F=(___), G=(___), H=(___), I=(___), J=(___), K=(___), L=(___), M=(___)
-        //
-        // --- [*] Opp Hand: 1=(A♥), 2=(K♣), 3=(2♦), 4=(A♣), 5=(7♣), 6=(8♠), 7=(K♥), 8=(3♠)
-        //
-        // --- [*] Del Hand: 1=(10♦), 2=(4♥), 3=(10♠), 4=(5♠), 5=(3♦), 6=(5♣), 7=(6♠), 8=(J♥)
-        //
-        //
-        // Let's do (2+8=10)&(7+3=10)->10 pair: 10
-        // So we'll need to discard a 3:
-        //  - !8
-        // Then we can do something like this:
-        //  - *C+D&B+E&2
-        //
 
         g.discard(Address::Hand(7)).ok();
         g.turn = !g.turn;

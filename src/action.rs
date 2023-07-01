@@ -11,9 +11,7 @@ pub enum ParsingError {
 /// A pile address
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Address {
-    Pair,      // Smart pile for auto-pairing
     Hand(u8),  // Address of a pile in your hand
-    Discard,   // Smart pile for auto-discarding
     Floor(u8), // Address of a pile on the floor
 }
 
@@ -53,9 +51,7 @@ impl Action {
                     Operation::Passive
                 },
                 match x & 0b00011111 {
-                    0 => Ok(Address::Pair),
                     1..=8 => Ok(Address::Hand((x & 0b00011111) - 1)),
-                    9 => Ok(Address::Discard),
                     10..=23 => Ok(Address::Floor((x & 0b00011111) - 10)),
                     _ => Err(ParsingError::InvalidAddress),
                 }?,
@@ -121,7 +117,7 @@ impl Annotation {
                         '*' | '+' => Ok(32),
                         _ => Err(ParsingError::InvalidOperationCharacter),
                     }? + match x[1] as char {
-                        '0'..='9' => Ok(x[1] - '0' as u8),
+                        '1'..='8' => Ok(x[1] - '0' as u8),
                         'A'..='M' => Ok(x[1] - 'A' as u8 + 10),
                         _ => Err(ParsingError::InvalidAddressCharacter),
                     }?)
