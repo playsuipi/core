@@ -73,9 +73,9 @@ impl Pile {
         x.mark == Mark::Single
     }
 
-    /// Is one of these piles a single?
-    pub fn single_xor(x: &Pile, y: &Pile) -> bool {
-        (x.mark == Mark::Single) ^ (y.mark == Mark::Single)
+    /// Are both piles singles?
+    pub fn both_singles(x: &Pile, y: &Pile) -> bool {
+        (x.mark == Mark::Single) && (y.mark == Mark::Single)
     }
 
     /// Combine the cards from two piles
@@ -98,7 +98,7 @@ impl Pile {
     /// Create a group pile from two groupable piles
     pub fn group(x: &mut Pile, y: &mut Pile) -> Result<Pile, PileError> {
         assert_eq!(x.value, y.value); // Mismatched value
-        assert!(Pile::single_xor(x, y)); // More than one single
+        assert!(!Pile::both_singles(x, y)); // More than one single
         assert!(Pile::groupable(x)); // Invalid left arg
         assert!(Pile::groupable(y)); // Invalid right arg
         Ok(Pile::new(Pile::cards(x, y), x.value, Mark::Group))

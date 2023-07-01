@@ -238,22 +238,62 @@ impl Game {
 
     /// Apply a move to the game state
     pub fn apply(&mut self, m: Move) -> Result<(), StateError> {
+        // If we just sort the actions, then theoretically this same approach will still work. So
+        // we really just need to figure out if sorting does what we want.
+        // So we have the following pairs:
+        //
+        //  - *C+D&B+E&2
+        //
+        //  - +E&2 << Store result of wherever the hell E ends up.
+        //  - &B+E << Move E to B. 7+3=10.
+        //  - +D&B << Store the result of wherever the hello D ends up.
+        //  - +C+D << Move D to C. 8+2=10.
+        //  -  C&B << D ends up at C. Move B to C.
+        //  - *C&2 << E ends up at C. Move 2 to C. Pair.
+        //
+        // Path of E:
+        //  E>B>C
+        // Path of D:
+        //  D>C
+        //
+        // Maybe we always end up at the end address? I mean if we don't then it isn't a valid
+        // move. So then the question becomes validating that everything ends up on that final
+        // address. But they don't really even have the option to change that because they just
+        // input a single address with a single operation.
+        //
+        // So I am convinced that we will always end up at the first address of the move. Which
+        // means we don't even need to keep track of where things go, we just need to go back up
+        // the stack calling group. Until we get to the last one, where we will instead call pair.
+        //
+        // Now the interesting piece of information is whether or not we are going to pair. We can
+        // find that out at the end of the iteration, or the top of the stack. So we can store
+        // that, or even find out beforehand, but then we either pair or group that final element.
+        //
+        //
+
         if m.actions.len() == 1 {
             self.apply_discard(m)?;
         } else {
-            let last_window = (m.actions.len() - 1) / 2;
-            for (i, w) in m.actions.windows(2).rev().enumerate() {
+            let mut builds = vec![];
+            let mut ender = Address::Pair;
+            let mut pair = false;
+            for w in m.actions.windows(2).rev() {
+                ender = w[0].address;
+                pair = w[0].operation == Operation::Active;
                 match w[1].operation {
                     Operation::Passive => {
-                        if i == last_window && w[0].operation == Operation::Active {
-                            self.pair(w[1].address, w[0].address)?;
-                        } else {
-                            self.group(w[0].address, w[1].address)?;
-                        }
+                        builds.push(w[1].address);
                     }
                     Operation::Active => {
                         self.build(w[0].address, w[1].address)?;
                     }
+                }
+            }
+            for (i, b) in builds.iter().rev().enumerate() {
+                if i == builds.len() - 1 && pair {
+                    self.pair(ender, b.to_owned())?;
+                } else {
+                    self.group(ender, b.to_owned())?;
                 }
             }
         }
@@ -405,8 +445,8 @@ mod tests {
             g.opponent.pairs.take(),
             vec![pair(
                 vec![
-                    Card::create(Value::Two, Suit::Diamonds),
                     Card::create(Value::Two, Suit::Spades),
+                    Card::create(Value::Two, Suit::Diamonds),
                 ],
                 Value::Two
             )]
@@ -446,6 +486,92 @@ mod tests {
                 single(Value::Two, Suit::Spades),
                 single(Value::Eight, Suit::Clubs),
                 single(Value::Ace, Suit::Hearts),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty()
+            ]
+        );
+    }
+
+    #[test]
+    fn test_apply_even_more_moves() {
+        let mut g = setup();
+
+        // We want to test the relationship between builds and groups. So we want to build like two
+        // sets together, and then we want to group some of them as well. This should verify the
+        // order of operations which states that a group should never be made before all the
+        // builds. Basically we want to wrap parenthesis around the build actions, and then do a
+        // second pass which completes the group actions.
+        //
+        //
+        // --- [*] Floor: A=(4♣), B=(7♦), C=(2♠), D=(8♣), E=(___), F=(___), G=(___), H=(___), I=(___), J=(___), K=(___), L=(___), M=(___)
+        //
+        // --- [*] Opp Hand: 1=(A♥), 2=(K♣), 3=(2♦), 4=(A♣), 5=(7♣), 6=(8♠), 7=(K♥), 8=(3♠)
+        //
+        // --- [*] Del Hand: 1=(10♦), 2=(4♥), 3=(10♠), 4=(5♠), 5=(3♦), 6=(5♣), 7=(6♠), 8=(J♥)
+        //
+        //
+        // Let's do (2+8=10)&(7+3=10)->10 pair: 10
+        // So we'll need to discard a 3:
+        //  - !8
+        // Then we can do something like this:
+        //  - *C+D&B+E&2
+        //
+
+        g.discard(Address::Hand(7)).ok();
+        g.turn = !g.turn;
+
+        assert!(g
+            .apply(Move::new(vec![
+                Action::new(Operation::Active, Address::Floor(2)),
+                Action::new(Operation::Active, Address::Floor(3)),
+                Action::new(Operation::Passive, Address::Floor(1)),
+                Action::new(Operation::Active, Address::Floor(4)),
+                Action::new(Operation::Passive, Address::Hand(0)),
+            ]))
+            .is_ok());
+
+        assert_eq!(
+            g.dealer.hand,
+            [
+                empty(),
+                single(Value::Four, Suit::Hearts),
+                single(Value::Ten, Suit::Spades),
+                single(Value::Five, Suit::Spades),
+                single(Value::Three, Suit::Diamonds),
+                single(Value::Five, Suit::Clubs),
+                single(Value::Six, Suit::Spades),
+                single(Value::Jack, Suit::Hearts),
+            ]
+        );
+
+        assert_eq!(
+            g.dealer.pairs.take(),
+            vec![pair(
+                vec![
+                    Card::create(Value::Two, Suit::Spades),
+                    Card::create(Value::Eight, Suit::Clubs),
+                    Card::create(Value::Seven, Suit::Diamonds),
+                    Card::create(Value::Three, Suit::Spades),
+                    Card::create(Value::Ten, Suit::Diamonds),
+                ],
+                Value::Ten
+            )]
+        );
+
+        assert_eq!(
+            g.floor,
+            [
+                single(Value::Four, Suit::Clubs),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
                 empty(),
                 empty(),
                 empty(),
