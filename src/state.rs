@@ -215,6 +215,20 @@ impl Game {
 
     /// Apply a move to the game state
     pub fn apply(&mut self, m: Move) -> Result<(), StateError> {
+        assert_eq!(
+            m.actions
+                .iter()
+                .filter(|a| match a.address {
+                    Address::Hand(_) => true,
+                    Address::Floor(_) => false,
+                })
+                .count(),
+            1
+        ); // More than one hand address in move
+        assert!(match m.actions.last().unwrap().address {
+            Address::Hand(_) => true,
+            Address::Floor(_) => false,
+        }); // Hand address is not the last action
         if m.actions.len() == 1 {
             self.discard(m.actions[0].address)?;
         } else {
@@ -238,6 +252,14 @@ impl Game {
                     self.group(destination, b.to_owned())?;
                 }
             }
+            assert!(
+                pair || self
+                    .player()
+                    .hand
+                    .iter()
+                    .position(|x| x.borrow().value == self.pile(destination).borrow().value)
+                    .is_some()
+            ); // Created a pile with a value player can't pair
         }
         Ok(())
     }
