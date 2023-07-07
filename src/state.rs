@@ -105,6 +105,19 @@ impl Game {
         }
     }
 
+    /// Collapse all piles to the beginning of the floor array
+    pub fn collapse_floor(&mut self) {
+        for (i, x) in self
+            .floor
+            .iter()
+            .map(|x| x.take())
+            .filter(|x| !x.is_empty())
+            .enumerate()
+        {
+            self.floor[i].replace(x);
+        }
+    }
+
     /// Get the player for the current turn
     pub fn player(&self) -> &Player {
         if self.turn {
@@ -662,6 +675,55 @@ mod tests {
                 single(Value::Two, Suit::Spades),
                 single(Value::Eight, Suit::Clubs),
                 single(Value::Ace, Suit::Hearts),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty()
+            ]
+        );
+    }
+
+    #[test]
+    fn test_collapse_floor_method() {
+        let mut g = setup();
+
+        assert!(g.build(Address::Floor(0), Address::Hand(7)).is_ok());
+        assert!(g.group(Address::Floor(0), Address::Floor(1)).is_ok());
+        assert!(g.pair(Address::Floor(0), Address::Hand(4)).is_ok());
+
+        assert_eq!(
+            g.floor,
+            [
+                empty(),
+                empty(),
+                single(Value::Two, Suit::Spades),
+                single(Value::Eight, Suit::Clubs),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty(),
+                empty()
+            ]
+        );
+
+        g.collapse_floor();
+
+        assert_eq!(
+            g.floor,
+            [
+                single(Value::Two, Suit::Spades),
+                single(Value::Eight, Suit::Clubs),
+                empty(),
+                empty(),
+                empty(),
                 empty(),
                 empty(),
                 empty(),
