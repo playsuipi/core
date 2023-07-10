@@ -30,12 +30,18 @@ pub struct Pile {
     pub cards: Vec<Card>,
     pub value: u8,
     pub mark: Mark,
+    pub owner: bool,
 }
 
 impl Pile {
     /// Create a new pile
     pub fn new(cards: Vec<Card>, value: u8, mark: Mark) -> Self {
-        Pile { cards, value, mark }
+        Pile {
+            cards,
+            value,
+            mark,
+            owner: false,
+        }
     }
 
     /// Create an empty pile

@@ -195,7 +195,10 @@ impl Game {
     {
         if let (Some(mut x), Some(mut y)) = (self.take(p.0), self.take(p.1)) {
             match reduce(&mut x, &mut y) {
-                Ok(z) => save(self, z),
+                Ok(mut z) => {
+                    z.owner = self.turn;
+                    save(self, z)
+                }
                 Err(e) => {
                     self.pile(p.0).replace(x);
                     self.pile(p.1).replace(y);
@@ -506,19 +509,18 @@ mod tests {
             ]
         );
 
-        assert_eq!(
-            g.dealer.pairs.take(),
-            vec![pair(
-                vec![
-                    Card::create(Value::Two, Suit::Spades),
-                    Card::create(Value::Eight, Suit::Clubs),
-                    Card::create(Value::Seven, Suit::Diamonds),
-                    Card::create(Value::Three, Suit::Spades),
-                    Card::create(Value::Ten, Suit::Diamonds),
-                ],
-                Value::Ten
-            )]
+        let mut p = pair(
+            vec![
+                Card::create(Value::Two, Suit::Spades),
+                Card::create(Value::Eight, Suit::Clubs),
+                Card::create(Value::Seven, Suit::Diamonds),
+                Card::create(Value::Three, Suit::Spades),
+                Card::create(Value::Ten, Suit::Diamonds),
+            ],
+            Value::Ten,
         );
+        p.owner = true;
+        assert_eq!(g.dealer.pairs.take(), vec![p]);
 
         assert_eq!(
             g.floor,
