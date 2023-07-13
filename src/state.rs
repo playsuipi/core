@@ -229,6 +229,15 @@ impl Game {
         )
     }
 
+    /// Count the number of stacked piles owned by the current player
+    pub fn stacks(&mut self) -> usize {
+        self.floor
+            .iter()
+            .map(|x| x.borrow())
+            .filter(|x| x.cards.len() > 1 && x.owner == self.turn)
+            .count()
+    }
+
     /// Apply a move to the game state
     pub fn apply(&mut self, m: Move) -> Result<(), StateError> {
         assert_eq!(
@@ -246,6 +255,7 @@ impl Game {
             Address::Floor(_) => false,
         }); // Hand address is not the last action
         if m.actions.len() == 1 {
+            assert_eq!(self.stacks(), 0); // Discard while owning a stack
             self.discard(m.actions[0].address)?;
         } else {
             let mut builds = vec![];
@@ -268,6 +278,7 @@ impl Game {
                     self.group(destination, b.to_owned())?;
                 }
             }
+            assert!(pair || self.stacks() <= 1); // Owning more than one stack
             assert!(
                 pair || self
                     .player()
