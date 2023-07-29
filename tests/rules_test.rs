@@ -41,8 +41,7 @@ fn test_pair_two_cards() {
         [
             single(Value::Four, Suit::Clubs),
             single(Value::Seven, Suit::Diamonds),
-            // single(Value::Two, Suit::Spades),
-            empty(),
+            empty(), // single(Value::Two, Suit::Spades),
             single(Value::Eight, Suit::Clubs),
             empty(),
             empty(),
@@ -61,8 +60,7 @@ fn test_pair_two_cards() {
         [
             single(Value::Ace, Suit::Hearts),
             single(Value::King, Suit::Clubs),
-            // single(Value::Two, Suit::Diamonds),
-            empty(),
+            empty(), // single(Value::Two, Suit::Diamonds),
             single(Value::Ace, Suit::Clubs),
             single(Value::Seven, Suit::Clubs),
             single(Value::Eight, Suit::Spades),
@@ -96,7 +94,7 @@ fn test_discard_from_hand() {
             single(Value::Seven, Suit::Diamonds),
             single(Value::Two, Suit::Spades),
             single(Value::Eight, Suit::Clubs),
-            single(Value::Ace, Suit::Hearts),
+            single(Value::Ace, Suit::Hearts), // empty(),
             empty(),
             empty(),
             empty(),
@@ -111,8 +109,7 @@ fn test_discard_from_hand() {
     assert_eq!(
         g.opponent.hand,
         [
-            // single(Value::Ace, Suit::Hearts),
-            empty(),
+            empty(), // single(Value::Ace, Suit::Hearts),
             single(Value::King, Suit::Clubs),
             single(Value::Two, Suit::Diamonds),
             single(Value::Ace, Suit::Clubs),
@@ -134,10 +131,8 @@ fn test_build_and_group() {
         g.floor,
         [
             single(Value::Four, Suit::Clubs),
-            // single(Value::Seven, Suit::Diamonds),
-            empty(),
+            empty(), // single(Value::Seven, Suit::Diamonds),
             single(Value::Two, Suit::Spades),
-            // single(Value::Eight, Suit::Clubs),
             group(
                 vec![
                     Card::create(Value::Eight, Suit::Clubs),
@@ -145,7 +140,7 @@ fn test_build_and_group() {
                     Card::create(Value::Ace, Suit::Hearts),
                 ],
                 Value::Eight
-            ),
+            ), // single(Value::Eight, Suit::Clubs),
             empty(),
             empty(),
             empty(),
@@ -161,8 +156,7 @@ fn test_build_and_group() {
     assert_eq!(
         g.opponent.hand,
         [
-            // single(Value::Ace, Suit::Hearts),
-            empty(),
+            empty(), // single(Value::Ace, Suit::Hearts),
             single(Value::King, Suit::Clubs),
             single(Value::Two, Suit::Diamonds),
             single(Value::Ace, Suit::Clubs),
@@ -189,14 +183,13 @@ fn test_build_two_cards() {
             single(Value::Five, Suit::Hearts),
             single(Value::King, Suit::Hearts),
             single(Value::Four, Suit::Spades),
-            // single(Value::Seven, Suit::Clubs),
             build(
                 vec![
                     Card::create(Value::Seven, Suit::Clubs),
                     Card::create(Value::Three, Suit::Hearts),
                 ],
                 Value::Ten
-            ),
+            ), // single(Value::Seven, Suit::Clubs),
             empty(),
             empty(),
             empty(),
@@ -212,8 +205,7 @@ fn test_build_two_cards() {
     assert_eq!(
         g.opponent.hand,
         [
-            // single(Value::Three, Suit::Hearts),
-            empty(),
+            empty(), // single(Value::Three, Suit::Hearts),
             single(Value::Four, Suit::Diamonds),
             single(Value::Queen, Suit::Hearts),
             single(Value::Eight, Suit::Diamonds),
