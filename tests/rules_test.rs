@@ -216,3 +216,115 @@ fn test_build_two_cards() {
         ]
     );
 }
+
+#[test]
+fn test_build_and_pair() {
+    let mut g = setup([
+        139, 195, 37, 107, 143, 64, 106, 43, 179, 69, 244, 179, 23, 204, 20, 89, 184, 125, 65, 94,
+        157, 229, 237, 65, 32, 138, 107, 48, 253, 118, 170, 37,
+    ]);
+
+    assert!(apply(&mut g, "*B+C&5").is_ok());
+
+    assert_eq!(
+        g.floor,
+        [
+            single(Value::Ten, Suit::Hearts),
+            empty(), // single(Value::Four, Suit::Clubs),
+            empty(), // single(Value::Five, Suit::Diamonds),
+            single(Value::Jack, Suit::Diamonds),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty()
+        ]
+    );
+
+    assert_eq!(
+        g.opponent.hand,
+        [
+            single(Value::Queen, Suit::Clubs),
+            single(Value::Three, Suit::Spades),
+            single(Value::Eight, Suit::Spades),
+            single(Value::Ten, Suit::Diamonds),
+            empty(), // single(Value::Nine, Suit::Spades),
+            single(Value::Six, Suit::Clubs),
+            single(Value::Ace, Suit::Spades),
+            single(Value::Ten, Suit::Clubs),
+        ]
+    );
+
+    assert_eq!(
+        g.opponent.pairs.take(),
+        vec![pair(
+            vec![
+                Card::create(Value::Four, Suit::Clubs),
+                Card::create(Value::Five, Suit::Diamonds),
+                Card::create(Value::Nine, Suit::Spades),
+            ],
+            Value::Nine
+        )]
+    );
+}
+
+#[test]
+fn test_build_and_group_then_pair() {
+    let mut g = setup([
+        29, 247, 241, 44, 232, 99, 201, 142, 36, 1, 16, 27, 195, 115, 96, 251, 159, 80, 23, 166,
+        203, 176, 34, 17, 0, 244, 182, 172, 34, 16, 25, 255,
+    ]);
+
+    assert!(apply(&mut g, "*A+B&C+D&5").is_ok());
+
+    assert_eq!(
+        g.floor,
+        [
+            empty(), // single(Value::Three, Suit::Diamonds),
+            empty(), // single(Value::Four, Suit::Diamonds),
+            empty(), // single(Value::Five, Suit::Spades),
+            empty(), // single(Value::Two, Suit::Diamonds),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty()
+        ]
+    );
+
+    assert_eq!(
+        g.opponent.hand,
+        [
+            single(Value::Eight, Suit::Spades),
+            single(Value::Jack, Suit::Clubs),
+            single(Value::Six, Suit::Clubs),
+            single(Value::Eight, Suit::Hearts),
+            empty(), // single(Value::Seven, Suit::Spades),
+            single(Value::Five, Suit::Clubs),
+            single(Value::King, Suit::Hearts),
+            single(Value::Two, Suit::Hearts),
+        ]
+    );
+
+    assert_eq!(
+        g.opponent.pairs.take(),
+        vec![pair(
+            vec![
+                Card::create(Value::Three, Suit::Diamonds),
+                Card::create(Value::Four, Suit::Diamonds),
+                Card::create(Value::Five, Suit::Spades),
+                Card::create(Value::Two, Suit::Diamonds),
+                Card::create(Value::Seven, Suit::Spades),
+            ],
+            Value::Seven
+        )]
+    );
+}
