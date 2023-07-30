@@ -5,6 +5,21 @@ use playsuipi_core::rng;
 use playsuipi_core::state::{Game, StateError};
 use std::cell::RefCell;
 
+/// A pile owner
+pub enum Owner {
+    Opponent,
+    Dealer,
+}
+
+impl Into<bool> for Owner {
+    fn into(self) -> bool {
+        match self {
+            Owner::Opponent => false,
+            Owner::Dealer => true,
+        }
+    }
+}
+
 /// Setup an initial game state
 pub fn setup_default() -> Game {
     setup([0; 32])
@@ -25,13 +40,15 @@ pub fn setup(seed: [u8; 32]) -> Game {
 pub fn apply(g: &mut Game, x: &str) -> Result<(), StateError> {
     match Annotation::new(String::from(x)).to_move() {
         Ok(m) => g.apply(m),
-        Err(_) => Err(StateError::InvalidMove)
+        Err(_) => Err(StateError::InvalidMove),
     }
 }
 
 /// Helper for populating a pile with a pair
-pub fn pair(xs: Vec<Card>, v: Value) -> Pile {
-    Pile::new(xs, v as u8, Mark::Pair)
+pub fn pair(xs: Vec<Card>, v: Value, o: Owner) -> Pile {
+    let mut p = Pile::new(xs, v as u8, Mark::Pair);
+    p.owner = o.into();
+    p
 }
 
 /// Helper for populating a pile with a group

@@ -76,7 +76,8 @@ fn test_pair_two_cards() {
                 Card::create(Value::Two, Suit::Spades),
                 Card::create(Value::Two, Suit::Diamonds),
             ],
-            Value::Two
+            Value::Two,
+            Owner::Opponent,
         )]
     );
 }
@@ -267,7 +268,8 @@ fn test_build_and_pair() {
                 Card::create(Value::Five, Suit::Diamonds),
                 Card::create(Value::Nine, Suit::Spades),
             ],
-            Value::Nine
+            Value::Nine,
+            Owner::Opponent,
         )]
     );
 }
@@ -324,7 +326,8 @@ fn test_build_and_group_then_pair() {
                 Card::create(Value::Two, Suit::Diamonds),
                 Card::create(Value::Seven, Suit::Spades),
             ],
-            Value::Seven
+            Value::Seven,
+            Owner::Opponent,
         )]
     );
 }
@@ -399,21 +402,24 @@ fn test_first_round() {
                     Card::create(Value::Eight, Suit::Clubs),
                     Card::create(Value::Eight, Suit::Spades),
                 ],
-                Value::Eight
+                Value::Eight,
+                Owner::Opponent,
             ),
             pair(
                 vec![
                     Card::create(Value::Seven, Suit::Diamonds),
                     Card::create(Value::Seven, Suit::Clubs),
                 ],
-                Value::Seven
+                Value::Seven,
+                Owner::Opponent,
             ),
             pair(
                 vec![
                     Card::create(Value::King, Suit::Hearts),
                     Card::create(Value::King, Suit::Clubs),
                 ],
-                Value::King
+                Value::King,
+                Owner::Opponent,
             ),
             pair(
                 vec![
@@ -421,44 +427,49 @@ fn test_first_round() {
                     Card::create(Value::Two, Suit::Diamonds),
                     Card::create(Value::Three, Suit::Spades),
                 ],
-                Value::Three
+                Value::Three,
+                Owner::Opponent,
             ),
         ]
     );
 
-    let mut a = pair(
+    assert_eq!(
+        g.dealer.pairs.take(),
         vec![
-            Card::create(Value::Four, Suit::Clubs),
-            Card::create(Value::Two, Suit::Spades),
-            Card::create(Value::Six, Suit::Spades),
-        ],
-        Value::Six,
+            pair(
+                vec![
+                    Card::create(Value::Four, Suit::Clubs),
+                    Card::create(Value::Two, Suit::Spades),
+                    Card::create(Value::Six, Suit::Spades),
+                ],
+                Value::Six,
+                Owner::Dealer,
+            ),
+            pair(
+                vec![
+                    Card::create(Value::Five, Suit::Spades),
+                    Card::create(Value::Five, Suit::Clubs),
+                ],
+                Value::Five,
+                Owner::Dealer,
+            ),
+            pair(
+                vec![
+                    Card::create(Value::Ace, Suit::Hearts),
+                    Card::create(Value::Three, Suit::Diamonds),
+                    Card::create(Value::Four, Suit::Hearts),
+                ],
+                Value::Four,
+                Owner::Dealer,
+            ),
+            pair(
+                vec![
+                    Card::create(Value::Ten, Suit::Spades),
+                    Card::create(Value::Ten, Suit::Diamonds),
+                ],
+                Value::Ten,
+                Owner::Dealer,
+            ),
+        ]
     );
-    a.owner = true;
-    let mut b = pair(
-        vec![
-            Card::create(Value::Five, Suit::Spades),
-            Card::create(Value::Five, Suit::Clubs),
-        ],
-        Value::Five,
-    );
-    b.owner = true;
-    let mut c = pair(
-        vec![
-            Card::create(Value::Ace, Suit::Hearts),
-            Card::create(Value::Three, Suit::Diamonds),
-            Card::create(Value::Four, Suit::Hearts),
-        ],
-        Value::Four,
-    );
-    c.owner = true;
-    let mut d = pair(
-        vec![
-            Card::create(Value::Ten, Suit::Spades),
-            Card::create(Value::Ten, Suit::Diamonds),
-        ],
-        Value::Ten,
-    );
-    d.owner = true;
-    assert_eq!(g.dealer.pairs.take(), vec![a, b, c, d]);
 }
