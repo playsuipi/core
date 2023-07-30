@@ -3,33 +3,6 @@ use playsuipi_core::card::{Card, Suit, Value};
 mod common;
 use common::*;
 
-//
-// These are the tests from my Haskell project. I figure they will make a decent starting point
-// when creating a set of comprehensive rules.
-//
-// Build Module Tests:
-//   Cards can be used to build a group: [OK]
-//   Cards can be used to build a stack: [OK]
-//   Stacks can be used to build a group: [OK]
-//   Stacks can be used to build a stack: [OK]
-//   Groups can be used to build a group: [OK]
-//   Groups can NOT be used to build a stack: [OK]
-//   Face cards can NOT be used to build a group: [OK]
-//   Face cards can NOT be used to build a stack: [OK]
-//   Buildables with different values can NOT be grouped: [OK]
-//   Stacks can NOT be built to a value higher than 10: [OK]
-//   Cards with the same value can NOT be stacked: [OK]
-// Card Module Tests:
-//   Card values are comparable: [OK]
-//   Card suits are comparable: [OK]
-//   Cards are comparable: [OK]
-//   Card values can convert to ints: [OK]
-// Pair Module Tests:
-//   Pair calculates the total card count: [OK]
-//   Pair calculates the total spade count: [OK]
-//   Pair calculates the total ace count: [OK]
-//
-
 #[test]
 fn test_pair_two_cards() {
     let mut g = setup_default();
@@ -369,28 +342,28 @@ fn test_first_round() {
     assert_eq!(
         g.opponent.hand,
         [
-            empty(),
-            empty(),
-            empty(),
-            empty(),
-            empty(),
-            empty(),
-            empty(),
-            empty(),
+            empty(), // single(Value::Ace, Suit::Hearts),
+            empty(), // single(Value::King, Suit::Clubs),
+            empty(), // single(Value::Two, Suit::Diamonds),
+            empty(), // single(Value::Ace, Suit::Clubs),
+            empty(), // single(Value::Seven, Suit::Clubs),
+            empty(), // single(Value::Eight, Suit::Spades),
+            empty(), // single(Value::King, Suit::Hearts),
+            empty(), // single(Value::Three, Suit::Spades),
         ]
     );
 
     assert_eq!(
         g.dealer.hand,
         [
-            empty(),
-            empty(),
-            empty(),
-            empty(),
-            empty(),
-            empty(),
-            empty(),
-            empty(),
+            empty(), // single(Value::Ten, Suit::Diamonds),
+            empty(), // single(Value::Four, Suit::Hearts),
+            empty(), // single(Value::Ten, Suit::Spades),
+            empty(), // single(Value::Five, Suit::Spades),
+            empty(), // single(Value::Three, Suit::Diamonds),
+            empty(), // single(Value::Five, Suit::Clubs),
+            empty(), // single(Value::Six, Suit::Spades),
+            empty(), // single(Value::Jack, Suit::Hearts),
         ]
     );
 
@@ -514,28 +487,28 @@ fn test_another_round() {
     assert_eq!(
         g.opponent.hand,
         [
-            empty(),
-            empty(),
-            empty(),
-            empty(),
-            empty(),
-            empty(),
-            empty(),
-            empty(),
+            empty(), // single(Value::Eight, Suit::Clubs),
+            empty(), // single(Value::Two, Suit::Diamonds),
+            empty(), // single(Value::Nine, Suit::Spades),
+            empty(), // single(Value::Eight, Suit::Spades),
+            empty(), // single(Value::King, Suit::Clubs),
+            empty(), // single(Value::Ten, Suit::Spades),
+            empty(), // single(Value::Eight, Suit::Hearts),
+            empty(), // single(Value::Six, Suit::Spades),
         ]
     );
 
     assert_eq!(
         g.dealer.hand,
         [
-            empty(),
-            empty(),
-            empty(),
-            empty(),
-            empty(),
-            empty(),
-            empty(),
-            empty(),
+            empty(), // single(Value::Queen, Suit::Diamonds),
+            empty(), // single(Value::Three, Suit::Clubs),
+            empty(), // single(Value::Seven, Suit::Spades),
+            empty(), // single(Value::Five, Suit::Hearts),
+            empty(), // single(Value::Seven, Suit::Hearts),
+            empty(), // single(Value::Ace, Suit::Diamonds),
+            empty(), // single(Value::Six, Suit::Clubs),
+            empty(), // single(Value::Four, Suit::Spades),
         ]
     );
 
