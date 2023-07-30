@@ -11,3 +11,6 @@ Cargo.lock
 
 # GDB history
 .gdb_history
+
+# Misc.
+log.txt
