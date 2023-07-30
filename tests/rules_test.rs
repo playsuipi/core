@@ -473,3 +473,133 @@ fn test_first_round() {
         ]
     );
 }
+
+#[test]
+fn test_another_round() {
+    let mut g = setup([
+        229, 206, 248, 97, 54, 114, 229, 97, 217, 93, 61, 160, 176, 231, 38, 48, 39, 92, 130, 186,
+        52, 30, 115, 58, 103, 197, 243, 129, 39, 107, 203, 248,
+    ]);
+
+    let moves = [
+        "*A+D&C&8", "!5", "*A&3", "*A&3", "!5", "!2", "!1", "B+6", "C+2", "*B&8", "*B&6", "!1",
+        "!7", "!4", "*C&4", "!7",
+    ];
+
+    for m in moves {
+        assert!(apply(&mut g, m).is_ok());
+        g.collapse_floor();
+        g.turn = !g.turn;
+    }
+
+    assert_eq!(
+        g.floor,
+        [
+            single(Value::King, Suit::Clubs), // single(Value::Four, Suit::Diamonds),
+            single(Value::Queen, Suit::Diamonds), // single(Value::Nine, Suit::Diamonds),
+            single(Value::Five, Suit::Hearts), // single(Value::Six, Suit::Diamonds),
+            single(Value::Six, Suit::Clubs),  // single(Value::Two, Suit::Hearts),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty()
+        ]
+    );
+
+    assert_eq!(
+        g.opponent.hand,
+        [
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+        ]
+    );
+
+    assert_eq!(
+        g.dealer.hand,
+        [
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+        ]
+    );
+
+    assert_eq!(
+        g.opponent.pairs.take(),
+        vec![
+            pair(
+                vec![
+                    Card::create(Value::Four, Suit::Diamonds),
+                    Card::create(Value::Two, Suit::Hearts),
+                    Card::create(Value::Six, Suit::Diamonds),
+                    Card::create(Value::Six, Suit::Spades),
+                ],
+                Value::Six,
+                Owner::Opponent,
+            ),
+            pair(
+                vec![
+                    Card::create(Value::Nine, Suit::Diamonds),
+                    Card::create(Value::Nine, Suit::Spades),
+                ],
+                Value::Nine,
+                Owner::Opponent,
+            ),
+            pair(
+                vec![
+                    Card::create(Value::Eight, Suit::Clubs),
+                    Card::create(Value::Two, Suit::Diamonds),
+                    Card::create(Value::Ten, Suit::Spades),
+                ],
+                Value::Ten,
+                Owner::Opponent,
+            ),
+            pair(
+                vec![
+                    Card::create(Value::Eight, Suit::Hearts),
+                    Card::create(Value::Eight, Suit::Spades),
+                ],
+                Value::Eight,
+                Owner::Opponent,
+            ),
+        ]
+    );
+
+    assert_eq!(
+        g.dealer.pairs.take(),
+        vec![
+            pair(
+                vec![
+                    Card::create(Value::Seven, Suit::Hearts),
+                    Card::create(Value::Seven, Suit::Spades),
+                ],
+                Value::Seven,
+                Owner::Dealer,
+            ),
+            pair(
+                vec![
+                    Card::create(Value::Three, Suit::Clubs),
+                    Card::create(Value::Ace, Suit::Diamonds),
+                    Card::create(Value::Four, Suit::Spades),
+                ],
+                Value::Four,
+                Owner::Dealer,
+            ),
+        ]
+    );
+}
