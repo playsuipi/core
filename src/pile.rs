@@ -4,8 +4,14 @@ use std::fmt;
 /// Pile manipulation errors
 #[derive(Debug, Eq, PartialEq)]
 pub enum PileError {
-    InvalidBuild,
-    InvalidGroup,
+    InvalidBuildArg,
+    InvalidGroupArg,
+    InvalidPairArg,
+    BuildEqualValues,
+    BuildHigherThanTen,
+    GroupDifferentValues,
+    GroupTwoSingles,
+    PairDifferentValues,
 }
 
 /// A pile type marker
@@ -65,23 +71,39 @@ impl Pile {
     }
 
     /// Can I use this pile in a build?
-    pub fn buildable(x: &Pile) -> bool {
-        x.mark == Mark::Single || x.mark == Mark::Build
+    pub fn buildable(x: &Pile) -> Result<(), PileError> {
+        if x.mark == Mark::Single || x.mark == Mark::Build {
+            Ok(())
+        } else {
+            Err(PileError::InvalidBuildArg)
+        }
     }
 
     /// Can I use this pile in a group?
-    pub fn groupable(x: &Pile) -> bool {
-        x.mark == Mark::Group || x.mark == Mark::Build || x.mark == Mark::Single
+    pub fn groupable(x: &Pile) -> Result<(), PileError> {
+        if x.mark == Mark::Group || x.mark == Mark::Build || x.mark == Mark::Single {
+            Ok(())
+        } else {
+            Err(PileError::InvalidGroupArg)
+        }
     }
 
     /// Can I pair this pile with another one?
-    pub fn pairable(x: &Pile) -> bool {
-        x.mark == Mark::Single
+    pub fn pairable(x: &Pile) -> Result<(), PileError> {
+        if x.mark == Mark::Single {
+            Ok(())
+        } else {
+            Err(PileError::InvalidPairArg)
+        }
     }
 
     /// Are both piles singles?
-    pub fn both_singles(x: &Pile, y: &Pile) -> bool {
-        (x.mark == Mark::Single) && (y.mark == Mark::Single)
+    pub fn both_singles(x: &Pile, y: &Pile) -> Result<(), PileError> {
+        if (x.mark == Mark::Single) && (y.mark == Mark::Single) {
+            Err(PileError::GroupTwoSingles)
+        } else {
+            Ok(())
+        }
     }
 
     /// Combine the cards from two piles
@@ -94,27 +116,37 @@ impl Pile {
 
     /// Create a build pile from two buildable piles
     pub fn build(x: &mut Pile, y: &mut Pile) -> Result<Pile, PileError> {
-        assert_ne!(x.value, y.value); // Same value must group/pair
-        assert!(x.value + y.value <= 10); // Build higher than 10
-        assert!(Pile::buildable(x)); // Invalid left arg
-        assert!(Pile::buildable(y)); // Invalid right arg
-        Ok(Pile::new(Pile::cards(x, y), x.value + y.value, Mark::Build))
+        Pile::buildable(x)?;
+        Pile::buildable(y)?;
+        if x.value == y.value {
+            Err(PileError::BuildEqualValues)
+        } else if x.value + y.value > 10 {
+            Err(PileError::BuildHigherThanTen)
+        } else {
+            Ok(Pile::new(Pile::cards(x, y), x.value + y.value, Mark::Build))
+        }
     }
 
     /// Create a group pile from two groupable piles
     pub fn group(x: &mut Pile, y: &mut Pile) -> Result<Pile, PileError> {
-        assert_eq!(x.value, y.value); // Mismatched value
-        assert!(!Pile::both_singles(x, y)); // More than one single
-        assert!(Pile::groupable(x)); // Invalid left arg
-        assert!(Pile::groupable(y)); // Invalid right arg
-        Ok(Pile::new(Pile::cards(x, y), x.value, Mark::Group))
+        Pile::groupable(x)?;
+        Pile::groupable(y)?;
+        Pile::both_singles(x, y)?;
+        if x.value != y.value {
+            Err(PileError::GroupDifferentValues)
+        } else {
+            Ok(Pile::new(Pile::cards(x, y), x.value, Mark::Group))
+        }
     }
 
     /// Create a pair pile using a pairable pile
     pub fn pair(x: &mut Pile, y: &mut Pile) -> Result<Pile, PileError> {
-        assert_eq!(x.value, y.value); // Mismatched value
-        assert!(Pile::pairable(y)); // Invalid right arg
-        Ok(Pile::new(Pile::cards(x, y), x.value, Mark::Pair))
+        Pile::pairable(y)?;
+        if x.value != y.value {
+            Err(PileError::PairDifferentValues)
+        } else {
+            Ok(Pile::new(Pile::cards(x, y), x.value, Mark::Pair))
+        }
     }
 }
 
@@ -165,5 +197,17 @@ mod tests {
                 Mark::Group
             ))
         );
+    }
+
+    #[test]
+    fn test_errors() {
+        let mut x = Pile::card(6, 0);
+        let mut y = Pile::card(7, 0);
+        let z = Pile::build(&mut x, &mut y);
+        assert_eq!(z, Err(PileError::BuildHigherThanTen));
+        let mut a = Pile::card(1, 0);
+        let mut b = Pile::card(1, 1);
+        let c = Pile::group(&mut a, &mut b);
+        assert_eq!(c, Err(PileError::GroupTwoSingles));
     }
 }
