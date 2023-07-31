@@ -40,7 +40,7 @@ pub fn setup(seed: [u8; 32]) -> Game {
 pub fn apply(g: &mut Game, x: &str) -> Result<(), StateError> {
     match Annotation::new(String::from(x)).to_move() {
         Ok(m) => g.apply(m),
-        Err(_) => Err(StateError::InvalidMove),
+        Err(_) => Err(StateError::InvalidInput),
     }
 }
 

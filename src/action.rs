@@ -1,11 +1,18 @@
 /// Byte parsing errors
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum ParsingError {
     InvalidByte,
     InvalidAddress,
     InvalidOperationCharacter,
     InvalidAddressCharacter,
     BlankAnnotation,
+}
+
+/// Move validation errors
+#[derive(Debug, Eq, PartialEq)]
+pub enum MoveError {
+    InvalidHandAddressCount,
+    InvalidHandAddressPosition,
 }
 
 /// A pile address
@@ -79,6 +86,28 @@ impl Move {
                 .map(|x| Action::from_byte(x.to_owned()))
                 .collect::<Result<Vec<Action>, ParsingError>>()?,
         ))
+    }
+
+    /// Validate that the move is legal
+    pub fn is_valid(&self) -> Result<(), MoveError> {
+        // TODO: Test uniqueness of addresses
+        if self
+            .actions
+            .iter()
+            .filter(|a| match a.address {
+                Address::Hand(_) => true,
+                Address::Floor(_) => false,
+            })
+            .count()
+            != 1
+        {
+            Err(MoveError::InvalidHandAddressCount)
+        } else {
+            match self.actions.last().unwrap().address {
+                Address::Hand(_) => Ok(()),
+                Address::Floor(_) => Err(MoveError::InvalidHandAddressPosition),
+            }
+        }
     }
 }
 
@@ -254,6 +283,44 @@ mod tests {
                 Action::new(Operation::Active, Address::Floor(4)),
                 Action::new(Operation::Passive, Address::Hand(0)),
             ]))
+        );
+    }
+
+    #[test]
+    fn test_move_validation() {
+        assert!(Move::new(vec![
+            Action::new(Operation::Passive, Address::Floor(0)),
+            Action::new(Operation::Passive, Address::Hand(0)),
+        ])
+        .is_valid()
+        .is_ok());
+
+        assert_eq!(
+            Move::new(vec![
+                Action::new(Operation::Passive, Address::Floor(0)),
+                Action::new(Operation::Passive, Address::Hand(0)),
+                Action::new(Operation::Passive, Address::Hand(1)),
+            ])
+            .is_valid(),
+            Err(MoveError::InvalidHandAddressCount)
+        );
+
+        assert_eq!(
+            Move::new(vec![
+                Action::new(Operation::Passive, Address::Floor(0)),
+                Action::new(Operation::Passive, Address::Floor(1)),
+            ])
+            .is_valid(),
+            Err(MoveError::InvalidHandAddressCount)
+        );
+
+        assert_eq!(
+            Move::new(vec![
+                Action::new(Operation::Passive, Address::Hand(0)),
+                Action::new(Operation::Passive, Address::Floor(0)),
+            ])
+            .is_valid(),
+            Err(MoveError::InvalidHandAddressPosition)
         );
     }
 }

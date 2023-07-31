@@ -1,4 +1,4 @@
-use crate::action::{Address, Move, Operation};
+use crate::action::{Address, Move, MoveError, Operation};
 use crate::card::Card;
 use crate::pile::{Pile, PileError};
 use crate::rng::{ChaCha20Rng, SliceRandom};
@@ -10,10 +10,25 @@ use std::collections::{HashSet, VecDeque};
 pub enum StateError {
     InvalidAddress,
     InvalidDiscard,
+    InvalidInput,
+    InvalidMove(MoveError),
     InvalidPile(PileError),
-    InvalidMove,
     FloorIsFull,
     PileIsNotEmpty,
+    OwnTooManyPiles,
+    UnpairablePileValue,
+}
+
+impl From<MoveError> for StateError {
+    fn from(value: MoveError) -> StateError {
+        StateError::InvalidMove(value)
+    }
+}
+
+impl From<PileError> for StateError {
+    fn from(value: PileError) -> StateError {
+        StateError::InvalidPile(value)
+    }
 }
 
 /// The state of a player
@@ -158,27 +173,31 @@ impl Game {
 
     /// Discard a card from your hand
     pub fn discard(&mut self, a: Address) -> Result<(), StateError> {
-        match a {
-            Address::Hand(_) => {
-                if let Some(pile) = self.take(a) {
-                    if let Some(j) = self.floor.iter().position(|x| x.borrow().is_empty()) {
-                        self.floor[j].replace(pile);
-                        if self.unique_floor() {
-                            Ok(())
+        if self.stacks() != 0 {
+            Err(StateError::InvalidDiscard)
+        } else {
+            match a {
+                Address::Hand(_) => {
+                    if let Some(pile) = self.take(a) {
+                        if let Some(j) = self.floor.iter().position(|x| x.borrow().is_empty()) {
+                            self.floor[j].replace(pile);
+                            if self.unique_floor() {
+                                Ok(())
+                            } else {
+                                let v = self.floor[j].take();
+                                self.replace(a, v)?;
+                                Err(StateError::InvalidDiscard)
+                            }
                         } else {
-                            let v = self.floor[j].take();
-                            self.replace(a, v)?;
-                            Err(StateError::InvalidDiscard)
+                            self.replace(a, pile)?;
+                            Err(StateError::FloorIsFull)
                         }
                     } else {
-                        self.replace(a, pile)?;
-                        Err(StateError::FloorIsFull)
+                        Err(StateError::InvalidDiscard)
                     }
-                } else {
-                    Err(StateError::InvalidDiscard)
                 }
+                _ => Err(StateError::InvalidAddress),
             }
-            _ => Err(StateError::InvalidAddress),
         }
     }
 
@@ -202,7 +221,7 @@ impl Game {
                 Err(e) => {
                     self.pile(p.0).replace(x);
                     self.pile(p.1).replace(y);
-                    Err(StateError::InvalidPile(e))
+                    Err(e.into())
                 }
             }
         } else {
@@ -230,7 +249,7 @@ impl Game {
     }
 
     /// Count the number of stacked piles owned by the current player
-    pub fn stacks(&mut self) -> usize {
+    pub fn stacks(&self) -> usize {
         self.floor
             .iter()
             .map(|x| x.borrow())
@@ -238,24 +257,28 @@ impl Game {
             .count()
     }
 
+    /// Make sure a turn results in a valid game state
+    pub fn validate_turn(&self, destination: Address, pair: bool) -> Result<(), StateError> {
+        if self.stacks() > 1 {
+            Err(StateError::OwnTooManyPiles)
+        } else if !pair
+            && self
+                .player()
+                .hand
+                .iter()
+                .position(|x| x.borrow().value == self.pile(destination).borrow().value)
+                .is_none()
+        {
+            Err(StateError::UnpairablePileValue)
+        } else {
+            Ok(())
+        }
+    }
+
     /// Apply a move to the game state
     pub fn apply(&mut self, m: Move) -> Result<(), StateError> {
-        assert_eq!(
-            m.actions
-                .iter()
-                .filter(|a| match a.address {
-                    Address::Hand(_) => true,
-                    Address::Floor(_) => false,
-                })
-                .count(),
-            1
-        ); // More than one hand address in move
-        assert!(match m.actions.last().unwrap().address {
-            Address::Hand(_) => true,
-            Address::Floor(_) => false,
-        }); // Hand address is not the last action
+        m.is_valid()?;
         if m.actions.len() == 1 {
-            assert_eq!(self.stacks(), 0); // Discard while owning a stack
             self.discard(m.actions[0].address)?;
         } else {
             let mut builds = vec![];
@@ -278,15 +301,7 @@ impl Game {
                     self.group(destination, b.to_owned())?;
                 }
             }
-            assert!(pair || self.stacks() <= 1); // Owning more than one stack
-            assert!(
-                pair || self
-                    .player()
-                    .hand
-                    .iter()
-                    .position(|x| x.borrow().value == self.pile(destination).borrow().value)
-                    .is_some()
-            ); // Created a pile with a value player can't pair
+            self.validate_turn(destination, pair)?;
         }
         Ok(())
     }
