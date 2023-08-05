@@ -44,6 +44,15 @@ pub fn apply(g: &mut Game, x: &str) -> Result<(), StateError> {
     }
 }
 
+/// Apply a set of moves to initialize game state
+pub fn apply_moves(g: &mut Game, xs: Vec<&str>) {
+    for x in xs {
+        assert!(apply(g, x).is_ok());
+        g.collapse_floor();
+        g.turn = !g.turn;
+    }
+}
+
 /// Helper for populating a pile with a pair
 pub fn pair(xs: Vec<Card>, v: Value, o: Owner) -> Pile {
     let mut p = Pile::new(xs, v as u8, Mark::Pair);

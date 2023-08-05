@@ -309,16 +309,13 @@ fn test_build_and_group_then_pair() {
 fn test_first_round() {
     let mut g = setup_default();
 
-    let moves = [
-        "*D&6", "*A+C&7", "*A&5", "!8", "!7", "!4", "*B&2", "*B&6", "!1", "B+5", "!4", "*B&2",
-        "B+3", "!3", "*B&8", "*B&1",
-    ];
-
-    for m in moves {
-        assert!(apply(&mut g, m).is_ok());
-        g.collapse_floor();
-        g.turn = !g.turn;
-    }
+    apply_moves(
+        &mut g,
+        vec![
+            "*D&6", "*A+C&7", "*A&5", "!8", "!7", "!4", "*B&2", "*B&6", "!1", "B+5", "!4", "*B&2",
+            "B+3", "!3", "*B&8", "*B&1",
+        ],
+    );
 
     assert_eq!(
         g.floor,
@@ -454,16 +451,13 @@ fn test_another_round() {
         52, 30, 115, 58, 103, 197, 243, 129, 39, 107, 203, 248,
     ]);
 
-    let moves = [
-        "*A+D&C&8", "!5", "*A&3", "*A&3", "!5", "!2", "!1", "B+6", "C+2", "*B&8", "*B&6", "!1",
-        "!7", "!4", "*C&4", "!7",
-    ];
-
-    for m in moves {
-        assert!(apply(&mut g, m).is_ok());
-        g.collapse_floor();
-        g.turn = !g.turn;
-    }
+    apply_moves(
+        &mut g,
+        vec![
+            "*A+D&C&8", "!5", "*A&3", "*A&3", "!5", "!2", "!1", "B+6", "C+2", "*B&8", "*B&6", "!1",
+            "!7", "!4", "*C&4", "!7",
+        ],
+    );
 
     assert_eq!(
         g.floor,

@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 /// Byte parsing errors
 #[derive(Debug, Eq, PartialEq)]
 pub enum ParsingError {
@@ -11,12 +13,13 @@ pub enum ParsingError {
 /// Move validation errors
 #[derive(Debug, Eq, PartialEq)]
 pub enum MoveError {
+    DuplicateAddress,
     InvalidHandAddressCount,
     InvalidHandAddressPosition,
 }
 
 /// A pile address
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Address {
     Hand(u8),  // Address of a pile in your hand
     Floor(u8), // Address of a pile on the floor
@@ -90,8 +93,15 @@ impl Move {
 
     /// Validate that the move is legal
     pub fn is_valid(&self) -> Result<(), MoveError> {
-        // TODO: Test uniqueness of addresses
-        if self
+        let mut addresses = HashSet::new();
+        if !self
+            .actions
+            .iter()
+            .map(|a| a.address)
+            .all(|a| addresses.insert(a))
+        {
+            Err(MoveError::DuplicateAddress)
+        } else if self
             .actions
             .iter()
             .filter(|a| match a.address {

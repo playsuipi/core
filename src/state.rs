@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use std::collections::{HashSet, VecDeque};
 
 /// State manipulation errors
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum StateError {
     InvalidAddress,
     InvalidDiscard,
@@ -17,6 +17,7 @@ pub enum StateError {
     PileIsNotEmpty,
     OwnTooManyPiles,
     UnpairablePileValue,
+    DuplicateFloorValue,
 }
 
 impl From<MoveError> for StateError {
@@ -270,6 +271,8 @@ impl Game {
                 .is_none()
         {
             Err(StateError::UnpairablePileValue)
+        } else if !self.unique_floor() {
+            Err(StateError::DuplicateFloorValue)
         } else {
             Ok(())
         }
