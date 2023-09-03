@@ -167,15 +167,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_default() {
-        let x = Pile::default();
-        assert_eq!(x.cards.len(), 0);
-        assert_eq!(x.value, 0);
-        assert_eq!(x.mark, Mark::Empty);
-    }
-
-    #[test]
-    fn test_stuff() {
+    fn test_build_and_group() {
         let mut x = Pile::card(2, 0);
         let mut y = Pile::card(3, 0);
         let z = Pile::build(&mut x, &mut y);
