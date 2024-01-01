@@ -33,7 +33,7 @@ impl From<PileError> for StateError {
 }
 
 /// The state of a player
-#[derive(Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Player {
     pub hand: [RefCell<Pile>; 8],
     pub pairs: RefCell<Vec<Pile>>,
@@ -55,7 +55,7 @@ impl Player {
 }
 
 /// The state of a game
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct State {
     pub deck: VecDeque<Card>,
     pub floor: [RefCell<Pile>; 13],
