@@ -56,7 +56,7 @@ impl Player {
 
 /// The state of a game
 #[derive(Debug, Default)]
-pub struct Game {
+pub struct State {
     pub deck: VecDeque<Card>,
     pub floor: [RefCell<Pile>; 13],
     pub dealer: Player,
@@ -64,7 +64,7 @@ pub struct Game {
     pub turn: bool,
 }
 
-impl Game {
+impl State {
     /// Initialize the deck with all 52 cards
     pub fn init_deck(&mut self) {
         for i in 0..52 {
@@ -316,14 +316,14 @@ mod tests {
     use crate::action::{Action, Address, Operation};
     use crate::card::{Suit, Value};
     use crate::pile::Mark;
-    use crate::rng;
+    use crate::rng::Rng;
 
     /// Setup an initial game state
-    fn setup() -> Game {
-        let mut rng = rng::get_seeded_rng([0; 32]);
-        let mut g = Game::default();
+    fn setup() -> State {
+        let mut rng = Rng::from_seed([0; 32]);
+        let mut g = State::default();
         g.init_deck();
-        g.shuffle_deck(&mut rng);
+        g.shuffle_deck(rng.borrow_mut());
         g.deal_hands();
         g.deal_floor();
         g

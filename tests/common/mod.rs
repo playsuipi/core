@@ -1,8 +1,8 @@
 use playsuipi_core::action::Annotation;
 use playsuipi_core::card::{Card, Suit, Value};
 use playsuipi_core::pile::{Mark, Pile};
-use playsuipi_core::rng;
-use playsuipi_core::state::{Game, StateError};
+use playsuipi_core::rng::Rng;
+use playsuipi_core::state::{State, StateError};
 use std::cell::RefCell;
 
 /// A pile owner
@@ -21,23 +21,23 @@ impl Into<bool> for Owner {
 }
 
 /// Setup an initial game state
-pub fn setup_default() -> Game {
+pub fn setup_default() -> State {
     setup([0; 32])
 }
 
 /// Setup an initial game state for the given seed
-pub fn setup(seed: [u8; 32]) -> Game {
-    let mut rng = rng::get_seeded_rng(seed);
-    let mut g = Game::default();
+pub fn setup(seed: [u8; 32]) -> State {
+    let mut rng = Rng::from_seed(seed);
+    let mut g = State::default();
     g.init_deck();
-    g.shuffle_deck(&mut rng);
+    g.shuffle_deck(rng.borrow_mut());
     g.deal_hands();
     g.deal_floor();
     g
 }
 
 /// Apply a move to the game from a string annotation
-pub fn apply(g: &mut Game, x: &str) -> Result<(), StateError> {
+pub fn apply(g: &mut State, x: &str) -> Result<(), StateError> {
     match Annotation::new(String::from(x)).to_move() {
         Ok(m) => g.apply(m),
         Err(_) => Err(StateError::InvalidInput),
@@ -45,7 +45,7 @@ pub fn apply(g: &mut Game, x: &str) -> Result<(), StateError> {
 }
 
 /// Apply a set of moves to initialize game state
-pub fn apply_moves(g: &mut Game, xs: Vec<&str>) {
+pub fn apply_moves(g: &mut State, xs: Vec<&str>) {
     for x in xs {
         assert!(apply(g, x).is_ok());
         g.collapse_floor();
