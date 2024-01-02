@@ -93,17 +93,17 @@ pub extern "C" fn apply_move(g: &mut Box<Game>, a: &CString) -> Box<CString> {
     Box::new(
         CString::new(if let Ok(annotation) = a.to_str() {
             match Annotation::new(String::from(annotation)).to_move() {
-                Err(_) => "Invalid annotation!", // TODO: Convert error to string
+                Err(e) => e.to_string(),
                 Ok(m) => {
-                    if let Err(_) = g.apply(m) {
-                        "Failed to apply move!" // TODO: Convert error to string
+                    if let Err(e) = g.apply(m) {
+                        e.to_string()
                     } else {
-                        "" // Ok
+                        "".to_string() // Ok
                     }
                 }
             }
         } else {
-            "Invalid CString!"
+            "Error: Invalid CString".to_string()
         })
         .unwrap(),
     )

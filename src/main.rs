@@ -141,7 +141,7 @@ fn main() {
         println!("Hand:  {}\n", show_hand(api::read_hand(&g)));
         let mut error = api::apply_move(&mut g, &get_move());
         while !error.is_empty() {
-            println!("Error: {}", error.into_string().unwrap());
+            println!("{}", error.into_string().unwrap());
             error = api::apply_move(&mut g, &get_move());
         }
         api::next_turn(&mut g);

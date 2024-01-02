@@ -4,6 +4,7 @@ use crate::pile::{Pile, PileError};
 use crate::rng::{ChaCha20Rng, SliceRandom};
 use std::cell::RefCell;
 use std::collections::{HashSet, VecDeque};
+use std::fmt;
 
 /// State manipulation errors
 #[derive(Debug, Eq, PartialEq)]
@@ -29,6 +30,27 @@ impl From<MoveError> for StateError {
 impl From<PileError> for StateError {
     fn from(value: PileError) -> StateError {
         StateError::InvalidPile(value)
+    }
+}
+
+impl fmt::Display for StateError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "State Error: {}",
+            match self {
+                StateError::InvalidAddress => "Invalid address".to_string(),
+                StateError::InvalidDiscard => "Invalid discard".to_string(),
+                StateError::InvalidInput => "Invalid input".to_string(),
+                StateError::InvalidMove(e) => format!("Invalid move - {}", e),
+                StateError::InvalidPile(e) => format!("Invalid pile - {}", e),
+                StateError::FloorIsFull => "Floor is full".to_string(),
+                StateError::PileIsNotEmpty => "Pile is not empty".to_string(),
+                StateError::OwnTooManyPiles => "Owning too may piles".to_string(),
+                StateError::UnpairablePileValue => "Un-pairable pile value".to_string(),
+                StateError::DuplicateFloorValue => "Duplicate floor card".to_string(),
+            }
+        )
     }
 }
 

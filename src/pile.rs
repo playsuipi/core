@@ -14,6 +14,27 @@ pub enum PileError {
     PairDifferentValues,
 }
 
+impl fmt::Display for PileError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                PileError::InvalidBuildArg => "You may not build using a group",
+                PileError::InvalidGroupArg => "You may not group using a pair",
+                PileError::InvalidPairArg => "Invalid pair argument",
+                PileError::BuildEqualValues => "You may not build two cards with the same value",
+                PileError::BuildHigherThanTen => "You may not build a value larger than 10",
+                PileError::GroupDifferentValues =>
+                    "You may not group two cards with different values",
+                PileError::GroupTwoSingles => "You may not group two individual cards together",
+                PileError::PairDifferentValues =>
+                    "You may not pair a card with a pile that has a different value",
+            }
+        )
+    }
+}
+
 /// A pile type marker
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Mark {

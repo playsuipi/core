@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::fmt;
 
 /// Byte parsing errors
 #[derive(Debug, Eq, PartialEq)]
@@ -10,12 +11,45 @@ pub enum ParsingError {
     BlankAnnotation,
 }
 
+impl fmt::Display for ParsingError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Parsing Error: {}",
+            match self {
+                ParsingError::InvalidByte => "Invalid byte",
+                ParsingError::InvalidAddress => "Invalid pile address",
+                ParsingError::InvalidOperationCharacter => "Invalid operation char",
+                ParsingError::InvalidAddressCharacter => "Invalid address char",
+                ParsingError::BlankAnnotation => "Annotation is blank",
+            }
+        )
+    }
+}
+
 /// Move validation errors
 #[derive(Debug, Eq, PartialEq)]
 pub enum MoveError {
     DuplicateAddress,
     InvalidHandAddressCount,
     InvalidHandAddressPosition,
+}
+
+impl fmt::Display for MoveError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                MoveError::DuplicateAddress =>
+                    "You cannot use the same address multiple times in a single move",
+                MoveError::InvalidHandAddressCount =>
+                    "You must use exactly one hand address in your move",
+                MoveError::InvalidHandAddressPosition =>
+                    "The hand address must be the last address in your move",
+            }
+        )
+    }
 }
 
 /// A pile address
