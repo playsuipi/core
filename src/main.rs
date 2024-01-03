@@ -5,6 +5,18 @@ use std::ptr;
 
 const SUITS: [&str; 4] = ["♣", "♦", "♥", "♠"];
 
+const SUIPI: [&str; 5] = [
+    "   ____     _      _   __",
+    "  / __/_ __(_)__  (_) / /",
+    " _\\ \\/ // / / _ \\/ / /_/ ",
+    "/___/\\_,_/_/ .__/_/ (_)  ",
+    "          /_/            ",
+];
+
+fn show_suipi() -> String {
+    SUIPI.join("\n")
+}
+
 fn show_card(card: &u8) -> String {
     if card.to_owned() > 51 {
         String::from("__")
@@ -131,6 +143,7 @@ fn main() {
     let mut g = api::new_game(ptr::null());
     let mut status = api::status(&g);
     println!("[*] Seed: {:?}", status.seed);
+    println!("{}", show_suipi());
     while status.game < 2 {
         if status.turn {
             println!("\n[*] Dealer's turn:");
@@ -146,5 +159,8 @@ fn main() {
         }
         api::next_turn(&mut g);
         status = api::status(&g);
+        if status.floor == 0 {
+            println!("{}", show_suipi());
+        }
     }
 }

@@ -29,11 +29,20 @@ impl Game {
 
     /// Move the game state forward one turn
     pub fn tick(&mut self) {
+        // Handle Suipi case
+        if self.state.floor_count() == 0 {
+            self.state.player_mut().suipi_count += 1;
+        }
+        // Toggle turn
+        self.state.turn = self.state.dealer.card_count() > self.state.opponent.card_count();
+        // Cleanup floor
         self.state.collapse_floor();
+        // Handle end of game
         if self.state.deck.is_empty() {
             self.round = 0;
             self.game += 1;
         }
+        // Handle end of round
         if self.state.dealer.card_count() == 0 && self.state.opponent.card_count() == 0 {
             self.round += 1;
             self.deal();

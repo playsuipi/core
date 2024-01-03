@@ -59,6 +59,7 @@ impl fmt::Display for StateError {
 pub struct Player {
     pub hand: [RefCell<Pile>; 8],
     pub pairs: RefCell<Vec<Pile>>,
+    pub suipi_count: u8,
 }
 
 impl Player {
@@ -67,6 +68,7 @@ impl Player {
         Player {
             hand,
             pairs: RefCell::new(vec![]),
+            suipi_count: 0,
         }
     }
 
@@ -156,12 +158,26 @@ impl State {
         }
     }
 
-    /// Get the player for the current turn
+    /// Get the number of piles on the floor
+    pub fn floor_count(&self) -> usize {
+        self.floor.iter().filter(|x| !x.borrow().is_empty()).count()
+    }
+
+    /// Get a reference to the player for the current turn
     pub fn player(&self) -> &Player {
         if self.turn {
             &self.dealer
         } else {
             &self.opponent
+        }
+    }
+
+    /// Get a mutable reference to the player for the current turn
+    pub fn player_mut(&mut self) -> &mut Player {
+        if self.turn {
+            &mut self.dealer
+        } else {
+            &mut self.opponent
         }
     }
 

@@ -6,6 +6,7 @@ use crate::rng::Seed;
 use std::ffi::CString;
 use std::ptr;
 
+/// API level Pile data
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct Pile {
@@ -26,11 +27,14 @@ impl Pile {
     }
 }
 
+/// Game status and telemetry
 #[repr(C)]
 pub struct Status {
     pub game: u8,
     pub round: u8,
     pub turn: bool,
+    pub hand: u8,
+    pub floor: u8,
     pub seed: Seed,
 }
 
@@ -52,6 +56,8 @@ pub extern "C" fn status(g: &Box<Game>) -> Box<Status> {
         game: g.game,
         round: g.round,
         turn: g.state.turn,
+        hand: g.state.player().card_count() as u8,
+        floor: g.state.floor_count() as u8,
         seed: g.rng.borrow().get_seed(),
     })
 }
@@ -111,7 +117,6 @@ pub extern "C" fn apply_move(g: &mut Box<Game>, a: &CString) -> Box<CString> {
 
 /// End the current player's turn
 pub extern "C" fn next_turn(g: &mut Box<Game>) {
-    g.state.turn = g.state.dealer.card_count() > g.state.opponent.card_count();
     g.tick();
 }
 
