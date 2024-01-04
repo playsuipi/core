@@ -81,6 +81,7 @@ impl Scorecard {
 }
 
 /// Initialize a new game from the given seed
+#[no_mangle]
 pub extern "C" fn new_game(seed: *const Seed) -> Box<Game> {
     let mut g = Game::default();
     if seed != ptr::null() {
@@ -93,6 +94,7 @@ pub extern "C" fn new_game(seed: *const Seed) -> Box<Game> {
 }
 
 /// Get the status signals for a game
+#[no_mangle]
 pub extern "C" fn status(g: &Box<Game>) -> Box<Status> {
     Box::new(Status {
         game: g.game,
@@ -105,6 +107,7 @@ pub extern "C" fn status(g: &Box<Game>) -> Box<Status> {
 }
 
 /// Read the current player's hand
+#[no_mangle]
 pub extern "C" fn read_hand(g: &Box<Game>) -> Box<[u8; 8]> {
     let mut cards = [0; 8];
     let p = g.state.player();
@@ -122,6 +125,7 @@ pub extern "C" fn read_hand(g: &Box<Game>) -> Box<[u8; 8]> {
 }
 
 /// Read the current floor piles
+#[no_mangle]
 pub extern "C" fn read_floor(g: &Box<Game>) -> Box<[Pile; 13]> {
     let mut piles = [Pile::new(); 13];
     for i in 0..13 {
@@ -137,6 +141,7 @@ pub extern "C" fn read_floor(g: &Box<Game>) -> Box<[Pile; 13]> {
 }
 
 /// Attempt to apply a move to the game state
+#[no_mangle]
 pub extern "C" fn apply_move(g: &mut Box<Game>, a: &CString) -> Box<CString> {
     Box::new(
         CString::new(if let Ok(annotation) = a.to_str() {
@@ -158,16 +163,19 @@ pub extern "C" fn apply_move(g: &mut Box<Game>, a: &CString) -> Box<CString> {
 }
 
 /// End the current player's turn
+#[no_mangle]
 pub extern "C" fn next_turn(g: &mut Box<Game>) {
     g.tick();
 }
 
 /// Undo the most recent move
+#[no_mangle]
 pub extern "C" fn undo(g: &mut Box<Game>) {
     g.undo();
 }
 
 /// Get an array of score cards for the completed games
+#[no_mangle]
 pub extern "C" fn get_scores(g: &Box<Game>) -> Box<[Scorecard; 4]> {
     let mut scores = [Scorecard::default(); 4];
     for i in 0..g.game {
