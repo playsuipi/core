@@ -3,10 +3,11 @@ use crate::card::Card;
 use crate::game::Game;
 use crate::pile::Mark;
 use crate::rng::Seed;
+use crate::score::Score;
 use std::ffi::CString;
 use std::ptr;
 
-/// API level Pile data
+/// API level card pile data
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct Pile {
@@ -36,6 +37,47 @@ pub struct Status {
     pub hand: u8,
     pub floor: u8,
     pub seed: Seed,
+}
+
+/// API level player scorecard
+#[repr(C)]
+#[derive(Copy, Clone, Default)]
+pub struct Scorecard {
+    pub aces: u8,
+    pub most_cards: u8,
+    pub most_spades: u8,
+    pub suipi_count: u8,
+    pub ten_of_diamonds: u8,
+    pub two_of_spades: u8,
+    pub total: u8,
+}
+
+impl Scorecard {
+    fn dealer(score: &Score) -> Self {
+        let points = score.dealer_points();
+        Scorecard {
+            aces: score.dealer_aces,
+            most_cards: points[0],
+            most_spades: points[1],
+            suipi_count: points[2],
+            ten_of_diamonds: points[3],
+            two_of_spades: points[4],
+            total: score.dealer_total(),
+        }
+    }
+
+    fn opponent(score: &Score) -> Self {
+        let points = score.opponent_points();
+        Scorecard {
+            aces: score.opponent_aces,
+            most_cards: points[0],
+            most_spades: points[1],
+            suipi_count: points[2],
+            ten_of_diamonds: points[3],
+            two_of_spades: points[4],
+            total: score.opponent_total(),
+        }
+    }
 }
 
 /// Initialize a new game from the given seed
@@ -123,4 +165,18 @@ pub extern "C" fn next_turn(g: &mut Box<Game>) {
 /// Undo the most recent move
 pub extern "C" fn undo(g: &mut Box<Game>) {
     g.undo();
+}
+
+/// Get an array of score cards for the completed games
+pub extern "C" fn get_scores(g: &Box<Game>) -> Box<[Scorecard; 4]> {
+    let mut scores = [Scorecard::default(); 4];
+    for i in 0..g.game {
+        let j = (i * 2) as usize;
+        if j > 2 {
+            break;
+        }
+        scores[j] = Scorecard::opponent(&g.scores[i as usize]);
+        scores[j + 1] = Scorecard::dealer(&g.scores[i as usize]);
+    }
+    Box::new(scores)
 }

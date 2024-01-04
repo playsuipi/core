@@ -123,6 +123,31 @@ fn show_floor(floor: Box<[api::Pile; 13]>, status: &api::Status) -> String {
         .join(", ")
 }
 
+fn show_scores(opp: &api::Scorecard, dealer: &api::Scorecard) -> String {
+    format!(
+        "[*] Scores:\n\n\
+        Player | Aces | Most Cards | Most Spades | 10♦ | 2♠ | Suipis | Total\n\
+        ------ | ---- | ---------- | ----------- | --- | -- | ------ | -----\n\
+        Opp    |    {} |          {} |           {} |   {} |  {} |      {} |  {}\n\
+        Dealer |    {} |          {} |           {} |   {} |  {} |      {} |  {}\n\
+        ",
+        opp.aces,
+        opp.most_cards,
+        opp.most_spades,
+        opp.ten_of_diamonds,
+        opp.two_of_spades,
+        opp.suipi_count,
+        opp.total,
+        dealer.aces,
+        dealer.most_cards,
+        dealer.most_spades,
+        dealer.ten_of_diamonds,
+        dealer.two_of_spades,
+        dealer.suipi_count,
+        dealer.total,
+    )
+}
+
 fn get_input() -> io::Result<String> {
     let mut input = String::new();
     io::stdin().read_line(&mut input)?;
@@ -142,6 +167,8 @@ fn get_move() -> CString {
 fn main() {
     let mut g = api::new_game(ptr::null());
     let mut status = api::status(&g);
+    let mut game = status.game;
+    let mut round = status.round;
     println!("[*] Seed: {:?}", status.seed);
     println!("{}", show_suipi());
     while status.game < 2 {
@@ -161,6 +188,25 @@ fn main() {
         status = api::status(&g);
         if status.floor == 0 {
             println!("{}", show_suipi());
+        }
+        if game != status.game {
+            let scores = api::get_scores(&g);
+            println!(
+                "{}",
+                show_scores(
+                    &scores[(game * 2) as usize],
+                    &scores[(game * 2 + 1) as usize],
+                )
+            );
+            game = status.game;
+        } else if round != status.round {
+            println!(
+                "\n\
+                ================\n\
+                == Next Round ==\n\
+                ================"
+            );
+            round = status.round;
         }
     }
 }

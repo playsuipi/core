@@ -1,6 +1,6 @@
 use crate::action::{Address, Move, MoveError, Operation};
-use crate::card::Card;
-use crate::pile::{Pile, PileError};
+use crate::card::{Card, Value};
+use crate::pile::{Mark, Pile, PileError};
 use crate::rng::{ChaCha20Rng, SliceRandom};
 use std::cell::RefCell;
 use std::collections::{HashSet, VecDeque};
@@ -76,6 +76,15 @@ impl Player {
     pub fn card_count(&self) -> usize {
         self.hand.iter().filter(|x| !x.borrow().is_empty()).count()
     }
+
+    /// Get all the cards collected in pairs
+    pub fn into_pair_cards(&self) -> Vec<Card> {
+        self.pairs
+            .borrow()
+            .iter()
+            .flat_map(|p| p.cards.iter().map(|&c| c.clone()).collect::<Vec<Card>>())
+            .collect()
+    }
 }
 
 /// The state of a game
@@ -86,6 +95,7 @@ pub struct State {
     pub dealer: Player,
     pub opponent: Player,
     pub turn: bool,
+    pub last_score: bool,
 }
 
 impl State {
@@ -155,6 +165,23 @@ impl State {
             .enumerate()
         {
             self.floor[i].replace(x);
+        }
+    }
+
+    /// Award remaining floor cards to the last scorer at the end of the game
+    pub fn pickup_floor(&mut self) {
+        let cards = self
+            .floor
+            .iter()
+            .map(|x| x.take())
+            .filter(|x| !x.is_empty())
+            .flat_map(|x| x.cards)
+            .collect::<Vec<Card>>();
+        let last_pair = Pile::new(cards, Value::Invalid as u8, Mark::Pair);
+        if self.last_score {
+            self.dealer.pairs.borrow_mut().push(last_pair);
+        } else {
+            self.opponent.pairs.borrow_mut().push(last_pair);
         }
     }
 
@@ -280,11 +307,15 @@ impl State {
 
     /// Pair a pile with a capturing card
     pub fn pair(&mut self, a: Address, b: Address) -> Result<(), StateError> {
-        self.combine(
+        let res = self.combine(
             Pile::pair,
             |g, z| Ok(g.player().pairs.borrow_mut().push(z)),
             (a, b),
-        )
+        );
+        if res.is_ok() {
+            self.last_score = self.turn;
+        }
+        res
     }
 
     /// Count the number of stacked piles owned by the current player

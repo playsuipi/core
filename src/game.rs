@@ -1,5 +1,6 @@
 use crate::action::Move;
 use crate::rng::{Rng, Seed};
+use crate::score::Score;
 use crate::state::{State, StateError};
 
 #[derive(Default)]
@@ -8,6 +9,7 @@ pub struct Game {
     pub round: u8,
     pub rng: Rng,
     pub state: State,
+    pub scores: Vec<Score>,
     history: Vec<State>,
 }
 
@@ -29,7 +31,7 @@ impl Game {
 
     /// Move the game state forward one turn
     pub fn tick(&mut self) {
-        // Handle Suipi case
+        // Handle Suipi condition
         if self.state.floor_count() == 0 {
             self.state.player_mut().suipi_count += 1;
         }
@@ -37,14 +39,19 @@ impl Game {
         self.state.turn = self.state.dealer.card_count() > self.state.opponent.card_count();
         // Cleanup floor
         self.state.collapse_floor();
-        // Handle end of game
-        if self.state.deck.is_empty() {
-            self.round = 0;
-            self.game += 1;
-        }
         // Handle end of round
         if self.state.dealer.card_count() == 0 && self.state.opponent.card_count() == 0 {
-            self.round += 1;
+            // Handle end of game
+            if self.state.deck.is_empty() {
+                self.round = 0;
+                self.game += 1;
+                self.state.pickup_floor();
+                self.scores.push(Score::from(&self.state));
+                self.state = State::default();
+                self.history = Vec::new();
+            } else {
+                self.round += 1;
+            }
             self.deal();
         }
     }
