@@ -11,7 +11,7 @@ use std::ptr;
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct Pile {
-    pub cards: [u8; 32],
+    pub cards: [u8; 20],
     pub value: u8,
     pub build: bool,
     pub owner: bool,
@@ -20,7 +20,7 @@ pub struct Pile {
 impl Pile {
     pub fn new() -> Self {
         Pile {
-            cards: [u8::from(Card::invalid()); 32],
+            cards: [u8::from(Card::invalid()); 20],
             value: 0,
             build: false,
             owner: false,
