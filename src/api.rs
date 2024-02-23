@@ -114,7 +114,6 @@ pub extern "C" fn read_hand(g: &Box<Game>) -> Box<[u8; 8]> {
     for i in 0..8 {
         cards[i] = u8::from(
             p.hand[i]
-                .borrow()
                 .cards
                 .first()
                 .unwrap_or(&Card::invalid())
@@ -129,7 +128,7 @@ pub extern "C" fn read_hand(g: &Box<Game>) -> Box<[u8; 8]> {
 pub extern "C" fn read_floor(g: &Box<Game>) -> Box<[Pile; 13]> {
     let mut piles = [Pile::new(); 13];
     for i in 0..13 {
-        let f = g.state.floor[i].borrow();
+        let f = &g.state.floor[i];
         piles[i].value = f.value;
         piles[i].build = f.mark == Mark::Build;
         piles[i].owner = f.owner;

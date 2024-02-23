@@ -11,7 +11,7 @@ fn test_pair_two_cards() {
 
     assert_eq!(
         g.floor,
-        [
+        vec![
             single(Value::Four, Suit::Clubs),
             single(Value::Seven, Suit::Diamonds),
             empty(), // single(Value::Two, Suit::Spades),
@@ -43,7 +43,7 @@ fn test_pair_two_cards() {
     );
 
     assert_eq!(
-        g.opponent.pairs.take(),
+        g.opponent.pairs,
         vec![pair(
             vec![
                 Card::create(Value::Two, Suit::Spades),
@@ -234,7 +234,7 @@ fn test_build_and_pair() {
     );
 
     assert_eq!(
-        g.opponent.pairs.take(),
+        g.opponent.pairs,
         vec![pair(
             vec![
                 Card::create(Value::Four, Suit::Clubs),
@@ -290,7 +290,7 @@ fn test_build_and_group_then_pair() {
     );
 
     assert_eq!(
-        g.opponent.pairs.take(),
+        g.opponent.pairs,
         vec![pair(
             vec![
                 Card::create(Value::Three, Suit::Diamonds),
@@ -365,7 +365,7 @@ fn test_first_round() {
     );
 
     assert_eq!(
-        g.opponent.pairs.take(),
+        g.opponent.pairs,
         vec![
             pair(
                 vec![
@@ -404,7 +404,7 @@ fn test_first_round() {
     );
 
     assert_eq!(
-        g.dealer.pairs.take(),
+        g.dealer.pairs,
         vec![
             pair(
                 vec![
@@ -507,7 +507,7 @@ fn test_another_round() {
     );
 
     assert_eq!(
-        g.opponent.pairs.take(),
+        g.opponent.pairs,
         vec![
             pair(
                 vec![
@@ -548,7 +548,7 @@ fn test_another_round() {
     );
 
     assert_eq!(
-        g.dealer.pairs.take(),
+        g.dealer.pairs,
         vec![
             pair(
                 vec![
