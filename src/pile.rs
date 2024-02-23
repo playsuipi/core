@@ -70,6 +70,21 @@ impl Pile {
         self.mark == Mark::Empty
     }
 
+    /// Replace the current pile with another
+    pub fn replace(&mut self, p: Pile) -> Pile {
+        let x = self.clone();
+        self.cards = p.cards.clone();
+        self.value = p.value;
+        self.mark = p.mark;
+        self.owner = p.owner;
+        x
+    }
+
+    /// Take the current pile value away
+    pub fn take(&mut self) -> Self {
+        self.replace(Pile::empty())
+    }
+
     /// Can I use this pile in a build?
     pub fn buildable(x: &Pile) -> Result<(), PileError> {
         if x.mark == Mark::Single || x.mark == Mark::Build {

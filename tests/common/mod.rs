@@ -3,7 +3,6 @@ use playsuipi_core::card::{Card, Suit, Value};
 use playsuipi_core::pile::{Mark, Pile};
 use playsuipi_core::rng;
 use playsuipi_core::state::{Game, StateError};
-use std::cell::RefCell;
 
 /// A pile owner
 pub enum Owner {
@@ -61,21 +60,21 @@ pub fn pair(xs: Vec<Card>, v: Value, o: Owner) -> Pile {
 }
 
 /// Helper for populating a pile with a group
-pub fn group(xs: Vec<Card>, v: Value) -> RefCell<Pile> {
-    RefCell::new(Pile::new(xs, v as u8, Mark::Group))
+pub fn group(xs: Vec<Card>, v: Value) -> Pile {
+    Pile::new(xs, v as u8, Mark::Group)
 }
 
 /// Helper for populating a pile with a build
-pub fn build(xs: Vec<Card>, v: Value) -> RefCell<Pile> {
-    RefCell::new(Pile::new(xs, v as u8, Mark::Build))
+pub fn build(xs: Vec<Card>, v: Value) -> Pile {
+    Pile::new(xs, v as u8, Mark::Build)
 }
 
 /// Helper for populating a pile with a single
-pub fn single(v: Value, s: Suit) -> RefCell<Pile> {
-    RefCell::new(Pile::single(Card::create(v, s)))
+pub fn single(v: Value, s: Suit) -> Pile {
+    Pile::single(Card::create(v, s))
 }
 
 /// Helper for getting an empty pile
-pub fn empty() -> RefCell<Pile> {
-    RefCell::new(Pile::empty())
+pub fn empty() -> Pile {
+    Pile::empty()
 }

@@ -2,7 +2,6 @@ use crate::action::{Address, Move, MoveError, Operation};
 use crate::card::Card;
 use crate::pile::{Pile, PileError};
 use crate::rng::{ChaCha20Rng, SliceRandom};
-use std::cell::RefCell;
 use std::collections::{HashSet, VecDeque};
 
 /// State manipulation errors
@@ -35,22 +34,22 @@ impl From<PileError> for StateError {
 /// The state of a player
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct Player {
-    pub hand: [RefCell<Pile>; 8],
-    pub pairs: RefCell<Vec<Pile>>,
+    pub hand: Vec<Pile>,
+    pub pairs: Vec<Pile>,
 }
 
 impl Player {
     /// Get a new player from 8 piles
-    pub fn new(hand: [RefCell<Pile>; 8]) -> Player {
+    pub fn new(hand: Vec<Pile>) -> Player {
         Player {
             hand,
-            pairs: RefCell::new(vec![]),
+            pairs: vec![],
         }
     }
 
     /// Get the number of cards in a player's hand
     pub fn card_count(&self) -> usize {
-        self.hand.iter().filter(|x| !x.borrow().is_empty()).count()
+        self.hand.iter().filter(|x| !x.is_empty()).count()
     }
 }
 
@@ -58,7 +57,7 @@ impl Player {
 #[derive(Debug, Default)]
 pub struct Game {
     pub deck: VecDeque<Card>,
-    pub floor: [RefCell<Pile>; 13],
+    pub floor: Vec<Pile>,
     pub dealer: Player,
     pub opponent: Player,
     pub turn: bool,
@@ -87,11 +86,13 @@ impl Game {
 
     /// Deal eight cards to each player
     pub fn deal_hands(&mut self) {
-        for i in 0..8 {
+        self.opponent.hand = vec![];
+        self.dealer.hand = vec![];
+        for _ in 0..8 {
             let a = self.deal_pile();
             let b = self.deal_pile();
-            self.opponent.hand[i].replace(a);
-            self.dealer.hand[i].replace(b);
+            self.opponent.hand.push(a);
+            self.dealer.hand.push(b);
         }
     }
 
@@ -100,7 +101,6 @@ impl Game {
         let mut unique = HashSet::new();
         self.floor
             .iter()
-            .map(|x| x.borrow())
             .filter(|x| !x.is_empty())
             .map(|x| x.value)
             .all(|v| unique.insert(v))
@@ -108,8 +108,10 @@ impl Game {
 
     /// Deal four unique cards to the floor
     pub fn deal_floor(&mut self) {
+        self.floor = vec![];
+        self.collapse_floor();
         for i in 0..4 {
-            while self.floor[i].borrow().is_empty() {
+            while self.floor[i].is_empty() {
                 let x = self.deal_pile();
                 self.floor[i].replace(x);
                 if !self.unique_floor() {
@@ -123,14 +125,9 @@ impl Game {
 
     /// Collapse all piles to the beginning of the floor array
     pub fn collapse_floor(&mut self) {
-        for (i, x) in self
-            .floor
-            .iter()
-            .map(|x| x.take())
-            .filter(|x| !x.is_empty())
-            .enumerate()
-        {
-            self.floor[i].replace(x);
+        self.floor.retain(|x| !x.is_empty());
+        while self.floor.len() < 13 {
+            self.floor.push(Pile::empty());
         }
     }
 
@@ -143,19 +140,36 @@ impl Game {
         }
     }
 
-    /// Get a pile reference from an address
-    pub fn pile(&self, a: Address) -> &RefCell<Pile> {
+    /// Get the player for the current turn
+    pub fn player_mut(&mut self) -> &mut Player {
+        if self.turn {
+            &mut self.dealer
+        } else {
+            &mut self.opponent
+        }
+    }
+
+    /// Get the context needed to access the given address
+    pub fn pile(&self, a: Address) -> (&Vec<Pile>, usize) {
         match a {
-            Address::Hand(i) => &self.player().hand[i as usize],
-            Address::Floor(j) => &self.floor[j as usize],
+            Address::Hand(i) => (&self.player().hand, i as usize),
+            Address::Floor(j) => (&self.floor, j as usize),
+        }
+    }
+
+    /// Get the mutable context needed to access the given address
+    pub fn pile_mut(&mut self, a: Address) -> (&mut Vec<Pile>, usize) {
+        match a {
+            Address::Hand(i) => (&mut self.player_mut().hand, i as usize),
+            Address::Floor(j) => (&mut self.floor, j as usize),
         }
     }
 
     /// Take the value out of a pile if it is not empty
     pub fn take(&mut self, a: Address) -> Option<Pile> {
-        let x = self.pile(a);
-        if !x.borrow().is_empty() {
-            Some(x.take())
+        let (piles, i) = self.pile_mut(a);
+        if !piles[i].is_empty() {
+            Some(piles[i].take())
         } else {
             None
         }
@@ -163,9 +177,9 @@ impl Game {
 
     /// Replace the value of an empty pile
     pub fn replace(&mut self, a: Address, p: Pile) -> Result<(), StateError> {
-        let x = self.pile(a);
-        if x.borrow().is_empty() {
-            x.replace(p);
+        let (piles, i) = self.pile_mut(a);
+        if piles[i].is_empty() {
+            piles[i].replace(p);
             Ok(())
         } else {
             Err(StateError::PileIsNotEmpty)
@@ -180,7 +194,7 @@ impl Game {
             match a {
                 Address::Hand(_) => {
                     if let Some(pile) = self.take(a) {
-                        if let Some(j) = self.floor.iter().position(|x| x.borrow().is_empty()) {
+                        if let Some(j) = self.floor.iter().position(|x| x.is_empty()) {
                             self.floor[j].replace(pile);
                             if self.unique_floor() {
                                 Ok(())
@@ -220,8 +234,10 @@ impl Game {
                     save(self, z)
                 }
                 Err(e) => {
-                    self.pile(p.0).replace(x);
-                    self.pile(p.1).replace(y);
+                    let (xs, i) = self.pile_mut(p.0);
+                    xs[i].replace(x);
+                    let (ys, i) = self.pile_mut(p.1);
+                    ys[i].replace(y);
                     Err(e.into())
                 }
             }
@@ -242,24 +258,20 @@ impl Game {
 
     /// Pair a pile with a capturing card
     pub fn pair(&mut self, a: Address, b: Address) -> Result<(), StateError> {
-        self.combine(
-            Pile::pair,
-            |g, z| Ok(g.player().pairs.borrow_mut().push(z)),
-            (a, b),
-        )
+        self.combine(Pile::pair, |g, z| Ok(g.player_mut().pairs.push(z)), (a, b))
     }
 
     /// Count the number of stacked piles owned by the current player
     pub fn stacks(&self) -> usize {
         self.floor
             .iter()
-            .map(|x| x.borrow())
             .filter(|x| x.cards.len() > 1 && x.owner == self.turn)
             .count()
     }
 
     /// Make sure a turn results in a valid game state
     pub fn validate_turn(&self, destination: Address, pair: bool) -> Result<(), StateError> {
+        let (piles, i) = self.pile(destination);
         if self.stacks() > 1 {
             Err(StateError::OwnTooManyPiles)
         } else if !pair
@@ -267,7 +279,7 @@ impl Game {
                 .player()
                 .hand
                 .iter()
-                .position(|x| x.borrow().value == self.pile(destination).borrow().value)
+                .position(|x| x.value == piles[i].value)
                 .is_none()
         {
             Err(StateError::UnpairablePileValue)
@@ -335,23 +347,23 @@ mod tests {
     }
 
     /// Helper for populating a pile with a group
-    fn group(xs: Vec<Card>, v: Value) -> RefCell<Pile> {
-        RefCell::new(Pile::new(xs, v as u8, Mark::Group))
+    fn group(xs: Vec<Card>, v: Value) -> Pile {
+        Pile::new(xs, v as u8, Mark::Group)
     }
 
     /// Helper for populating a pile with a build
-    fn build(xs: Vec<Card>, v: Value) -> RefCell<Pile> {
-        RefCell::new(Pile::new(xs, v as u8, Mark::Build))
+    fn build(xs: Vec<Card>, v: Value) -> Pile {
+        Pile::new(xs, v as u8, Mark::Build)
     }
 
     /// Helper for populating a pile with a single
-    fn single(v: Value, s: Suit) -> RefCell<Pile> {
-        RefCell::new(Pile::single(Card::create(v, s)))
+    fn single(v: Value, s: Suit) -> Pile {
+        Pile::single(Card::create(v, s))
     }
 
     /// Helper for getting an empty pile
-    fn empty() -> RefCell<Pile> {
-        RefCell::new(Pile::empty())
+    fn empty() -> Pile {
+        Pile::empty()
     }
 
     #[test]
@@ -360,7 +372,7 @@ mod tests {
 
         assert_eq!(
             g.opponent,
-            Player::new([
+            Player::new(vec![
                 single(Value::Ace, Suit::Hearts),
                 single(Value::King, Suit::Clubs),
                 single(Value::Two, Suit::Diamonds),
@@ -374,7 +386,7 @@ mod tests {
 
         assert_eq!(
             g.dealer,
-            Player::new([
+            Player::new(vec![
                 single(Value::Ten, Suit::Diamonds),
                 single(Value::Four, Suit::Hearts),
                 single(Value::Ten, Suit::Spades),
@@ -451,7 +463,7 @@ mod tests {
         );
 
         assert_eq!(
-            g.opponent.pairs.take(),
+            g.opponent.pairs,
             vec![pair(
                 vec![
                     Card::create(Value::Two, Suit::Spades),
@@ -556,7 +568,7 @@ mod tests {
         );
 
         assert_eq!(
-            g.opponent.pairs.take(),
+            g.opponent.pairs,
             vec![pair(
                 vec![
                     Card::create(Value::Four, Suit::Clubs),
@@ -577,7 +589,7 @@ mod tests {
 
         assert_eq!(
             g.opponent,
-            Player::new([
+            Player::new(vec![
                 empty(),
                 single(Value::King, Suit::Clubs),
                 single(Value::Two, Suit::Diamonds),
