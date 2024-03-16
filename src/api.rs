@@ -4,7 +4,7 @@ use crate::game::Game;
 use crate::pile::Mark;
 use crate::rng::Seed;
 use crate::score::Score;
-use std::ffi::CString;
+use std::ffi::{c_char, CStr, CString};
 use std::ptr;
 
 /// API level card pile data
@@ -141,9 +141,9 @@ pub extern "C" fn read_floor(g: &Box<Game>) -> Box<[Pile; 13]> {
 
 /// Attempt to apply a move to the game state
 #[no_mangle]
-pub extern "C" fn apply_move(g: &mut Box<Game>, a: &CString) -> Box<CString> {
-    Box::new(
-        CString::new(if let Ok(annotation) = a.to_str() {
+pub extern "C" fn apply_move(g: &mut Box<Game>, a: *const c_char) -> *const c_char {
+    unsafe {
+        CString::new(if let Ok(annotation) = CStr::from_ptr(a).to_str() {
             match Annotation::new(String::from(annotation)).to_move() {
                 Err(e) => e.to_string(),
                 Ok(m) => {
@@ -157,8 +157,9 @@ pub extern "C" fn apply_move(g: &mut Box<Game>, a: &CString) -> Box<CString> {
         } else {
             "Error: Invalid CString".to_string()
         })
-        .unwrap(),
-    )
+        .unwrap()
+        .into_raw()
+    }
 }
 
 /// End the current player's turn

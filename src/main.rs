@@ -1,5 +1,5 @@
 use playsuipi_core::api;
-use std::ffi::CString;
+use std::ffi::{CStr, CString};
 use std::io;
 use std::ptr;
 
@@ -179,10 +179,17 @@ fn main() {
         }
         println!("\nFloor: {}", show_floor(api::read_floor(&g), &status));
         println!("Hand:  {}\n", show_hand(api::read_hand(&g)));
-        let mut error = api::apply_move(&mut g, &get_move());
-        while !error.is_empty() {
-            println!("{}", error.into_string().unwrap());
-            error = api::apply_move(&mut g, &get_move());
+        unsafe {
+            loop {
+                let error = CStr::from_ptr(api::apply_move(&mut g, get_move().as_ptr()))
+                    .to_str()
+                    .unwrap();
+                if error != "" {
+                    println!("{}", error);
+                } else {
+                    break;
+                }
+            }
         }
         api::next_turn(&mut g);
         status = api::status(&g);
