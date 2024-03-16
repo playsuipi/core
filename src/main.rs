@@ -1,6 +1,8 @@
 use playsuipi_core::api;
+use std::env;
 use std::ffi::{CStr, CString};
-use std::io;
+use std::fs::File;
+use std::io::{stdin, BufReader, Read, Result as IOResult};
 use std::ptr;
 
 const SUITS: [&str; 4] = ["♣", "♦", "♥", "♠"];
@@ -148,9 +150,9 @@ fn show_scores(opp: &api::Scorecard, dealer: &api::Scorecard) -> String {
     )
 }
 
-fn get_input() -> io::Result<String> {
+fn get_input() -> IOResult<String> {
     let mut input = String::new();
-    io::stdin().read_line(&mut input)?;
+    stdin().read_line(&mut input)?;
     Ok(input)
 }
 
@@ -164,8 +166,36 @@ fn get_move() -> CString {
     CString::new(x.unwrap()).unwrap()
 }
 
+fn get_seed<R: Read>(r: R) -> IOResult<[u8; 32]> {
+    let mut br = BufReader::new(r);
+    let mut lines = String::new();
+    br.read_to_string(&mut lines)?;
+    let mut seed = [0; 32];
+    lines
+        .split("\n")
+        .filter_map(|str| match str.parse::<u8>() {
+            Ok(x) => Some(x),
+            Err(_) => None,
+        })
+        .enumerate()
+        .for_each(|(i, x)| seed[i] = x);
+    Ok(seed)
+}
+
 fn main() {
-    let mut g = api::new_game(ptr::null());
+    let args: Vec<String> = env::args().collect();
+    let seed = if args.len() > 1 {
+        match File::open(args[1].as_str()) {
+            Ok(f) => match get_seed(f) {
+                Ok(s) => &s,
+                Err(_) => ptr::null(),
+            },
+            Err(_) => ptr::null(),
+        }
+    } else {
+        ptr::null()
+    };
+    let mut g = api::new_game(seed);
     let mut status = api::status(&g);
     let mut game = status.game;
     let mut round = status.round;
