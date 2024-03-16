@@ -1,0 +1,5 @@
+gcc
+%h -x c++-header
+-Wall
+-Wextra
+%c -std=c11
