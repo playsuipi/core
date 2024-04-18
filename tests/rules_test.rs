@@ -111,7 +111,7 @@ fn test_cannot_skip_hand_address() {
 #[test]
 fn test_cannot_continue_after_hand_address() {
     let mut g = setup_default();
-    let res = apply(&mut g, "A+C+3&D");
+    let res = apply(&mut g, "3+A+C&D");
     assert!(res.is_err());
     assert_eq!(
         res.err().unwrap(),

@@ -46,7 +46,7 @@ impl fmt::Display for MoveError {
                 MoveError::InvalidHandAddressCount =>
                     "You must use exactly one hand address in your move",
                 MoveError::InvalidHandAddressPosition =>
-                    "The hand address must be the last address in your move",
+                    "The hand address may not be the first address in your move",
             }
         )
     }
@@ -146,11 +146,13 @@ impl Move {
             != 1
         {
             Err(MoveError::InvalidHandAddressCount)
-        } else {
-            match self.actions.last().unwrap().address {
-                Address::Hand(_) => Ok(()),
-                Address::Floor(_) => Err(MoveError::InvalidHandAddressPosition),
+        } else if self.actions.len() > 1 {
+            match self.actions.first().unwrap().address {
+                Address::Hand(_) => Err(MoveError::InvalidHandAddressPosition),
+                Address::Floor(_) => Ok(()),
             }
+        } else {
+            Ok(())
         }
     }
 }
