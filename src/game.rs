@@ -37,8 +37,6 @@ impl Game {
         }
         // Toggle turn
         self.state.turn = self.state.dealer.card_count() > self.state.opponent.card_count();
-        // Cleanup floor
-        self.state.collapse_floor();
         // Handle end of round
         if self.state.dealer.card_count() == 0 && self.state.opponent.card_count() == 0 {
             // Handle end of game

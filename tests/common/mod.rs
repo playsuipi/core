@@ -47,7 +47,6 @@ pub fn apply(g: &mut State, x: &str) -> Result<(), StateError> {
 pub fn apply_moves(g: &mut State, xs: Vec<&str>) {
     for x in xs {
         assert!(apply(g, x).is_ok());
-        g.collapse_floor();
         g.turn = !g.turn;
     }
 }

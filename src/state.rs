@@ -157,7 +157,7 @@ impl State {
     }
 
     /// Collapse all piles to the beginning of the floor array
-    pub fn collapse_floor(&mut self) {
+    fn collapse_floor(&mut self) {
         self.floor.retain(|x| !x.is_empty());
         while self.floor.len() < 13 {
             self.floor.push(Pile::empty());
@@ -351,31 +351,33 @@ impl State {
     /// Apply a move to the game state
     pub fn apply(&mut self, m: Move) -> Result<(), StateError> {
         m.is_valid()?;
-        if m.actions.len() == 1 {
-            self.discard(m.actions[0].address)?;
-        } else {
-            let mut builds = vec![];
-            for w in m.actions.windows(2).rev() {
-                match w[1].operation {
-                    Operation::Passive => {
-                        builds.push(w[1].address);
-                    }
-                    Operation::Active => {
-                        self.build(w[0].address, w[1].address)?;
-                    }
+        let mut builds = vec![];
+        for w in m.actions.windows(2).rev() {
+            match w[1].operation {
+                Operation::Passive => {
+                    builds.push(w[1].address);
+                }
+                Operation::Active => {
+                    self.build(w[0].address, w[1].address)?;
                 }
             }
-            let destination = m.actions[0].address;
-            let pair = m.actions[0].operation == Operation::Active;
-            for (i, b) in builds.iter().rev().enumerate() {
-                if i == builds.len() - 1 && pair {
-                    self.pair(destination, b.to_owned())?;
-                } else {
-                    self.group(destination, b.to_owned())?;
-                }
-            }
-            self.validate_turn(destination, pair)?;
         }
+        let destination = m.actions[0].address;
+        let pair = m.actions[0].operation == Operation::Active;
+        for (i, b) in builds.iter().rev().enumerate() {
+            if i == builds.len() - 1 && pair {
+                self.pair(destination, b.to_owned())?;
+            } else {
+                self.group(destination, b.to_owned())?;
+            }
+        }
+        self.collapse_floor();
+        if let Address::Hand(_) = destination {
+            if !pair {
+                self.discard(destination)?;
+            }
+        }
+        self.validate_turn(destination, pair)?;
         Ok(())
     }
 }
@@ -506,8 +508,8 @@ mod tests {
             [
                 single(Value::Four, Suit::Clubs),
                 single(Value::Seven, Suit::Diamonds),
-                empty(),
                 single(Value::Eight, Suit::Clubs),
+                empty(),
                 empty(),
                 empty(),
                 empty(),
@@ -667,55 +669,6 @@ mod tests {
                 single(Value::Two, Suit::Spades),
                 single(Value::Eight, Suit::Clubs),
                 single(Value::Ace, Suit::Hearts),
-                empty(),
-                empty(),
-                empty(),
-                empty(),
-                empty(),
-                empty(),
-                empty(),
-                empty()
-            ]
-        );
-    }
-
-    #[test]
-    fn test_collapse_floor_method() {
-        let mut g = setup();
-
-        assert!(g.build(Address::Floor(0), Address::Hand(7)).is_ok());
-        assert!(g.group(Address::Floor(0), Address::Floor(1)).is_ok());
-        assert!(g.pair(Address::Floor(0), Address::Hand(4)).is_ok());
-
-        assert_eq!(
-            g.floor,
-            [
-                empty(),
-                empty(),
-                single(Value::Two, Suit::Spades),
-                single(Value::Eight, Suit::Clubs),
-                empty(),
-                empty(),
-                empty(),
-                empty(),
-                empty(),
-                empty(),
-                empty(),
-                empty(),
-                empty()
-            ]
-        );
-
-        g.collapse_floor();
-
-        assert_eq!(
-            g.floor,
-            [
-                single(Value::Two, Suit::Spades),
-                single(Value::Eight, Suit::Clubs),
-                empty(),
-                empty(),
-                empty(),
                 empty(),
                 empty(),
                 empty(),

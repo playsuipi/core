@@ -14,8 +14,8 @@ fn test_pair_two_cards() {
         vec![
             single(Value::Four, Suit::Clubs),
             single(Value::Seven, Suit::Diamonds),
-            empty(), // single(Value::Two, Suit::Spades),
             single(Value::Eight, Suit::Clubs),
+            empty(), // single(Value::Two, Suit::Spades),
             empty(),
             empty(),
             empty(),
@@ -105,7 +105,6 @@ fn test_build_and_group() {
         g.floor,
         [
             single(Value::Four, Suit::Clubs),
-            empty(), // single(Value::Seven, Suit::Diamonds),
             single(Value::Two, Suit::Spades),
             group(
                 vec![
@@ -115,6 +114,7 @@ fn test_build_and_group() {
                 ],
                 Value::Eight
             ), // single(Value::Eight, Suit::Clubs),
+            empty(), // single(Value::Seven, Suit::Diamonds),
             empty(),
             empty(),
             empty(),
@@ -204,9 +204,9 @@ fn test_build_and_pair() {
         g.floor,
         [
             single(Value::Ten, Suit::Hearts),
+            single(Value::Jack, Suit::Diamonds),
             empty(), // single(Value::Four, Suit::Clubs),
             empty(), // single(Value::Five, Suit::Diamonds),
-            single(Value::Jack, Suit::Diamonds),
             empty(),
             empty(),
             empty(),

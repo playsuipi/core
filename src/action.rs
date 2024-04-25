@@ -46,7 +46,7 @@ impl fmt::Display for MoveError {
                 MoveError::InvalidHandAddressCount =>
                     "You must use exactly one hand address in your move",
                 MoveError::InvalidHandAddressPosition =>
-                    "The hand address may not be the first address in your move",
+                    "The hand address must be the last address in your move",
             }
         )
     }
@@ -146,10 +146,12 @@ impl Move {
             != 1
         {
             Err(MoveError::InvalidHandAddressCount)
-        } else if self.actions.len() > 1 {
-            match self.actions.first().unwrap().address {
-                Address::Hand(_) => Err(MoveError::InvalidHandAddressPosition),
-                Address::Floor(_) => Ok(()),
+        } else if !self.actions.is_empty()
+            && self.actions.first().unwrap().operation == Operation::Active
+        {
+            match self.actions.last().unwrap().address {
+                Address::Hand(_) => Ok(()),
+                Address::Floor(_) => Err(MoveError::InvalidHandAddressPosition),
             }
         } else {
             Ok(())
@@ -362,7 +364,7 @@ mod tests {
 
         assert_eq!(
             Move::new(vec![
-                Action::new(Operation::Passive, Address::Hand(0)),
+                Action::new(Operation::Active, Address::Hand(0)),
                 Action::new(Operation::Passive, Address::Floor(0)),
             ])
             .is_valid(),
