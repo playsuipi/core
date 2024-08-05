@@ -29,7 +29,7 @@ pub fn setup(seed: [u8; 32]) -> State {
     let mut rng = Rng::from_seed(seed);
     let mut g = State::default();
     g.init_deck();
-    g.shuffle_deck(rng.borrow_mut());
+    g.shuffle_deck(rng.rng_borrow_mut());
     g.deal_hands();
     g.deal_floor();
     g

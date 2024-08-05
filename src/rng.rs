@@ -22,12 +22,12 @@ impl Rng {
     }
 
     /// Get a reference to the base RNG object
-    pub fn borrow(&self) -> &ChaCha20Rng {
+    pub fn rng_borrow(&self) -> &ChaCha20Rng {
         &self.0
     }
 
     /// Get mutable reference to base RNG object
-    pub fn borrow_mut(&mut self) -> &mut ChaCha20Rng {
+    pub fn rng_borrow_mut(&mut self) -> &mut ChaCha20Rng {
         &mut self.0
     }
 }

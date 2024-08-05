@@ -1,5 +1,6 @@
 use crate::card::{Card, Suit, Value};
 use crate::state::{Player, State};
+use std::cmp::Ordering;
 
 /// Point value winners
 #[derive(Default, Eq, PartialEq)]
@@ -13,12 +14,10 @@ pub enum Winner {
 impl Winner {
     /// Get a winner between two number values
     fn new(dealer: usize, opponent: usize, score: u8) -> Self {
-        if dealer == opponent {
-            Winner::Tie
-        } else if dealer > opponent {
-            Winner::Dealer(score)
-        } else {
-            Winner::Opponent(score)
+        match dealer.cmp(&opponent) {
+            Ordering::Equal => Winner::Tie,
+            Ordering::Greater => Winner::Dealer(score),
+            Ordering::Less => Winner::Opponent(score),
         }
     }
 
@@ -59,8 +58,8 @@ impl From<&Player> for PlayerScore {
             .iter()
             .filter(|&c| c.suit == Suit::Spades as u8)
             .count();
-        score.ten_of_diamonds = cards.contains(&&Card::create(Value::Ten, Suit::Diamonds));
-        score.two_of_spades = cards.contains(&&Card::create(Value::Two, Suit::Spades));
+        score.ten_of_diamonds = cards.contains(&Card::create(Value::Ten, Suit::Diamonds));
+        score.two_of_spades = cards.contains(&Card::create(Value::Two, Suit::Spades));
         score
     }
 }
@@ -134,7 +133,7 @@ impl From<&State> for Score {
             suipi_bonus: Winner::new(
                 dealer.suipi_count,
                 opp.suipi_count,
-                (dealer.suipi_count as i8 - opp.suipi_count as i8).abs() as u8,
+                (dealer.suipi_count as i8 - opp.suipi_count as i8).unsigned_abs(),
             ),
             ten_of_diamonds: Winner::either(dealer.ten_of_diamonds, opp.ten_of_diamonds, 2),
             two_of_spades: Winner::either(dealer.two_of_spades, opp.two_of_spades, 1),

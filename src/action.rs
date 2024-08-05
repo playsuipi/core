@@ -172,10 +172,10 @@ impl Annotation {
 
     /// Get the value as a vector of bytes
     fn bytes(&self) -> Vec<u8> {
-        if self.value.len() > 0 {
-            match self.value.as_bytes()[0] as char {
-                '!' | '*' => self.value.as_bytes().to_vec(),
-                _ => [['!' as u8].as_slice(), self.value.as_bytes()].concat(),
+        if !self.value.is_empty() {
+            match self.value.as_bytes()[0] {
+                b'!' | b'*' => self.value.as_bytes().to_vec(),
+                _ => [[b'!'].as_slice(), self.value.as_bytes()].concat(),
             }
         } else {
             vec![]
@@ -184,18 +184,18 @@ impl Annotation {
 
     /// Convert an annotation to action bytes
     pub fn to_bytes(&self) -> Result<Vec<u8>, ParsingError> {
-        if self.bytes().len() > 0 {
+        if !self.bytes().is_empty() {
             self.bytes()
                 .windows(2)
                 .step_by(2)
                 .map(|x| {
-                    Ok(match x[0] as char {
-                        '!' | '&' => Ok(0),
-                        '*' | '+' => Ok(32),
+                    Ok(match x[0] {
+                        b'!' | b'&' => Ok(0),
+                        b'*' | b'+' => Ok(32),
                         _ => Err(ParsingError::InvalidOperationCharacter),
-                    }? + match x[1] as char {
-                        '1'..='8' => Ok(x[1] - '0' as u8),
-                        'A'..='M' => Ok(x[1] - 'A' as u8 + 10),
+                    }? + match x[1] {
+                        b'1'..=b'8' => Ok(x[1] - b'0'),
+                        b'A'..=b'M' => Ok(x[1] - b'A' + 10),
                         _ => Err(ParsingError::InvalidAddressCharacter),
                     }?)
                 })

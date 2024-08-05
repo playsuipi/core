@@ -5,7 +5,6 @@ use crate::pile::Mark;
 use crate::rng::Seed;
 use crate::score::Score;
 use std::ffi::{c_char, CStr, CString};
-use std::ptr;
 
 /// API level card pile data
 #[repr(C)]
@@ -17,8 +16,8 @@ pub struct Pile {
     pub owner: bool,
 }
 
-impl Pile {
-    pub fn new() -> Self {
+impl Default for Pile {
+    fn default() -> Self {
         Pile {
             cards: [u8::from(Card::invalid()); 20],
             value: 0,
@@ -81,13 +80,16 @@ impl Scorecard {
 }
 
 /// Initialize a new game from the given seed
+///
+/// # Safety
+///
+/// This function dereferences a raw pointer. If this pointer does not point to a valid Seed
+/// struct, this function will fail.
 #[no_mangle]
-pub extern "C" fn new_game(seed: *const Seed) -> Box<Game> {
+pub unsafe extern "C" fn new_game(seed: *const Seed) -> Box<Game> {
     let mut g = Game::default();
-    if seed != ptr::null() {
-        unsafe {
-            g.seed(*seed);
-        }
+    if !seed.is_null() {
+        g.seed(unsafe { *seed });
     }
     g.deal();
     Box::new(g)
@@ -95,6 +97,7 @@ pub extern "C" fn new_game(seed: *const Seed) -> Box<Game> {
 
 /// Get the status signals for a game
 #[no_mangle]
+#[allow(clippy::borrowed_box)]
 pub extern "C" fn status(g: &Box<Game>) -> Box<Status> {
     Box::new(Status {
         game: g.game,
@@ -102,17 +105,18 @@ pub extern "C" fn status(g: &Box<Game>) -> Box<Status> {
         turn: g.state.turn,
         hand: g.state.player().card_count() as u8,
         floor: g.state.floor_count() as u8,
-        seed: g.rng.borrow().get_seed(),
+        seed: g.rng.rng_borrow().get_seed(),
     })
 }
 
 /// Read the current player's hand
 #[no_mangle]
+#[allow(clippy::borrowed_box)]
 pub extern "C" fn read_hand(g: &Box<Game>) -> Box<[u8; 8]> {
     let mut cards = [0; 8];
     let p = g.state.player();
-    for i in 0..8 {
-        cards[i] = u8::from(
+    for (i, c) in cards.iter_mut().enumerate() {
+        *c = u8::from(
             p.hand[i]
                 .cards
                 .first()
@@ -125,25 +129,30 @@ pub extern "C" fn read_hand(g: &Box<Game>) -> Box<[u8; 8]> {
 
 /// Read the current floor piles
 #[no_mangle]
+#[allow(clippy::borrowed_box)]
 pub extern "C" fn read_floor(g: &Box<Game>) -> Box<[Pile; 13]> {
-    let mut piles = [Pile::new(); 13];
-    for i in 0..13 {
+    let mut piles = [Pile::default(); 13];
+    for (i, p) in piles.iter_mut().enumerate() {
         let f = &g.state.floor[i];
-        piles[i].value = f.value;
-        piles[i].build = f.mark == Mark::Build;
-        piles[i].owner = f.owner;
+        p.value = f.value;
+        p.build = f.mark == Mark::Build;
+        p.owner = f.owner;
         for (j, c) in f.cards.iter().enumerate() {
-            piles[i].cards[j] = u8::from(c.to_owned());
+            p.cards[j] = u8::from(c.to_owned());
         }
     }
     Box::new(piles)
 }
 
 /// Attempt to apply a move to the game state
+///
+/// # Safety
+///
+/// This function calls `std::ffi::CStr::from_ptr`, which is an unsafe function.
 #[no_mangle]
-pub extern "C" fn apply_move(g: &mut Box<Game>, a: *const c_char) -> *const c_char {
-    unsafe {
-        CString::new(if let Ok(annotation) = CStr::from_ptr(a).to_str() {
+pub unsafe extern "C" fn apply_move(g: &mut Box<Game>, a: *const c_char) -> *const c_char {
+    CString::new(
+        if let Ok(annotation) = unsafe { CStr::from_ptr(a) }.to_str() {
             match Annotation::new(String::from(annotation)).to_move() {
                 Err(e) => e.to_string(),
                 Ok(m) => {
@@ -156,10 +165,10 @@ pub extern "C" fn apply_move(g: &mut Box<Game>, a: *const c_char) -> *const c_ch
             }
         } else {
             "Error: Invalid CString".to_string()
-        })
-        .unwrap()
-        .into_raw()
-    }
+        },
+    )
+    .unwrap()
+    .into_raw()
 }
 
 /// End the current player's turn
@@ -176,6 +185,7 @@ pub extern "C" fn undo(g: &mut Box<Game>) {
 
 /// Get an array of score cards for the completed games
 #[no_mangle]
+#[allow(clippy::borrowed_box)]
 pub extern "C" fn get_scores(g: &Box<Game>) -> Box<[Scorecard; 4]> {
     let mut scores = [Scorecard::default(); 4];
     for i in 0..g.game {

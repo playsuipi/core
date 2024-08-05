@@ -20,7 +20,7 @@ fn show_suipi() -> String {
 }
 
 fn show_card(card: &u8) -> String {
-    if card.to_owned() > 51 {
+    if *card > 51 {
         String::from("__")
     } else {
         let val = card % 13 + 1;
@@ -96,16 +96,10 @@ fn show_pile(pile: api::Pile, status: &api::Status) -> String {
     }
 }
 
-fn show_hand(hand: Box<[u8; 8]>) -> String {
+fn show_hand(hand: [u8; 8]) -> String {
     hand.iter()
         .enumerate()
-        .map(|(i, x)| {
-            format!(
-                "{}=({})",
-                ((i as u8 + 49) as char).to_string(),
-                show_card(x)
-            )
-        })
+        .map(|(i, x)| format!("{}=({})", (i as u8 + 49) as char, show_card(x)))
         .collect::<Vec<String>>()
         .join(", ")
 }
@@ -117,7 +111,7 @@ fn show_floor(floor: Box<[api::Pile; 13]>, status: &api::Status) -> String {
         .map(|(i, x)| {
             format!(
                 "{}={}",
-                ((i as u8 + 65) as char).to_string(),
+                (i as u8 + 65) as char,
                 show_pile(x.to_owned(), status)
             )
         })
@@ -159,7 +153,7 @@ fn get_input() -> IOResult<String> {
 fn get_move() -> CString {
     println!("> Input your move below:");
     let mut x = get_input();
-    while let Err(_) = x {
+    while x.is_err() {
         println!("> Input your move below:");
         x = get_input();
     }
@@ -172,7 +166,7 @@ fn get_seed<R: Read>(r: R) -> IOResult<[u8; 32]> {
     br.read_to_string(&mut lines)?;
     let mut seed = [0; 32];
     lines
-        .split("\n")
+        .split('\n')
         .filter_map(|str| match str.parse::<u8>() {
             Ok(x) => Some(x),
             Err(_) => None,
@@ -195,7 +189,7 @@ fn main() {
     } else {
         ptr::null()
     };
-    let mut g = api::new_game(seed);
+    let mut g = unsafe { api::new_game(seed) };
     let mut status = api::status(&g);
     let mut game = status.game;
     let mut round = status.round;
@@ -208,13 +202,13 @@ fn main() {
             println!("\n[*] Opponent's turn:");
         }
         println!("\nFloor: {}", show_floor(api::read_floor(&g), &status));
-        println!("Hand:  {}\n", show_hand(api::read_hand(&g)));
+        println!("Hand:  {}\n", show_hand(*api::read_hand(&g)));
         unsafe {
             loop {
                 let error = CStr::from_ptr(api::apply_move(&mut g, get_move().as_ptr()))
                     .to_str()
                     .unwrap();
-                if error != "" {
+                if !error.is_empty() {
                     println!("{}", error);
                 } else {
                     break;

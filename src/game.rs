@@ -23,7 +23,7 @@ impl Game {
     pub fn deal(&mut self) {
         if self.round == 0 {
             self.state.init_deck();
-            self.state.shuffle_deck(self.rng.borrow_mut());
+            self.state.shuffle_deck(self.rng.rng_borrow_mut());
             self.state.deal_floor();
         }
         self.state.deal_hands();

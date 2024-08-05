@@ -78,10 +78,7 @@ impl Player {
 
     /// Get all the cards collected in pairs
     pub fn into_pair_cards(&self) -> Vec<Card> {
-        self.pairs
-            .iter()
-            .flat_map(|p| p.cards.iter().map(|&c| c.clone()).collect::<Vec<Card>>())
-            .collect()
+        self.pairs.iter().flat_map(|p| p.cards.to_vec()).collect()
     }
 }
 
@@ -148,7 +145,7 @@ impl State {
                 let x = self.deal_pile();
                 self.floor[i].replace(x);
                 if !self.unique_floor() {
-                    for c in self.floor[i].take().cards.to_owned() {
+                    for c in self.floor[i].take().cards.iter().copied() {
                         self.deck.push_back(c);
                     }
                 }
@@ -302,17 +299,24 @@ impl State {
 
     /// Build a pile from two addresses
     pub fn build(&mut self, a: Address, b: Address) -> Result<(), StateError> {
-        self.combine(Pile::build, |g, z| Ok(g.replace(a, z)?), (a, b))
+        self.combine(Pile::build, |g, z| g.replace(a, z), (a, b))
     }
 
     /// Group two piles from two addresses
     pub fn group(&mut self, a: Address, b: Address) -> Result<(), StateError> {
-        self.combine(Pile::group, |g, z| Ok(g.replace(a, z)?), (a, b))
+        self.combine(Pile::group, |g, z| g.replace(a, z), (a, b))
     }
 
     /// Pair a pile with a capturing card
     pub fn pair(&mut self, a: Address, b: Address) -> Result<(), StateError> {
-        let res = self.combine(Pile::pair, |g, z| Ok(g.player_mut().pairs.push(z)), (a, b));
+        let res = self.combine(
+            Pile::pair,
+            |g, z| {
+                g.player_mut().pairs.push(z);
+                Ok(())
+            },
+            (a, b),
+        );
         if res.is_ok() {
             self.last_score = self.turn;
         }
@@ -332,14 +336,7 @@ impl State {
         let (piles, i) = self.pile(destination);
         if self.stacks() > 1 {
             Err(StateError::OwnTooManyPiles)
-        } else if !pair
-            && self
-                .player()
-                .hand
-                .iter()
-                .position(|x| x.value == piles[i].value)
-                .is_none()
-        {
+        } else if !pair && !self.player().hand.iter().any(|x| x.value == piles[i].value) {
             Err(StateError::UnpairablePileValue)
         } else if !self.unique_floor() {
             Err(StateError::DuplicateFloorValue)
@@ -395,7 +392,7 @@ mod tests {
         let mut rng = Rng::from_seed([0; 32]);
         let mut g = State::default();
         g.init_deck();
-        g.shuffle_deck(rng.borrow_mut());
+        g.shuffle_deck(rng.rng_borrow_mut());
         g.deal_hands();
         g.deal_floor();
         g

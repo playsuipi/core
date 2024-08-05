@@ -36,19 +36,14 @@ impl fmt::Display for PileError {
 }
 
 /// A pile type marker
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum Mark {
+    #[default]
     Empty,
     Single,
     Build,
     Group,
     Pair,
-}
-
-impl Default for Mark {
-    fn default() -> Mark {
-        Mark::Empty
-    }
 }
 
 /// A pile of cards
