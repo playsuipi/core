@@ -86,6 +86,26 @@ impl Pile {
         self.mark == Mark::Empty
     }
 
+    // Is this pile a single?
+    pub fn is_single(&self) -> bool {
+        self.mark == Mark::Single
+    }
+
+    // Is this pile a build?
+    pub fn is_build(&self) -> bool {
+        self.mark == Mark::Build
+    }
+
+    // Is this pile a group?
+    pub fn is_group(&self) -> bool {
+        self.mark == Mark::Group
+    }
+
+    // Is this pile a pair?
+    pub fn is_pair(&self) -> bool {
+        self.mark == Mark::Pair
+    }
+
     /// Replace the current pile with another
     pub fn replace(&mut self, p: Pile) -> Pile {
         let x = self.clone();
@@ -103,7 +123,7 @@ impl Pile {
 
     /// Can I use this pile in a build?
     pub fn buildable(x: &Pile) -> Result<(), PileError> {
-        if x.mark == Mark::Single || x.mark == Mark::Build {
+        if x.is_single() || x.is_build() {
             Ok(())
         } else {
             Err(PileError::InvalidBuildArg)
@@ -112,7 +132,7 @@ impl Pile {
 
     /// Can I use this pile in a group?
     pub fn groupable(x: &Pile) -> Result<(), PileError> {
-        if x.mark == Mark::Group || x.mark == Mark::Build || x.mark == Mark::Single {
+        if x.is_group() || x.is_build() || x.is_single() {
             Ok(())
         } else {
             Err(PileError::InvalidGroupArg)
@@ -121,7 +141,7 @@ impl Pile {
 
     /// Can I pair this pile with another one?
     pub fn pairable(x: &Pile) -> Result<(), PileError> {
-        if x.mark == Mark::Single {
+        if x.is_single() {
             Ok(())
         } else {
             Err(PileError::InvalidPairArg)
@@ -130,7 +150,7 @@ impl Pile {
 
     /// Are both piles singles?
     pub fn both_singles(x: &Pile, y: &Pile) -> Result<(), PileError> {
-        if (x.mark == Mark::Single) && (y.mark == Mark::Single) {
+        if x.is_single() && y.is_single() {
             Err(PileError::GroupTwoSingles)
         } else {
             Ok(())

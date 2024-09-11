@@ -1,7 +1,6 @@
 use crate::action::Annotation;
 use crate::card::Card;
 use crate::game::Game;
-use crate::pile::Mark;
 use crate::rng::Seed;
 use crate::score::Score;
 use std::ffi::{c_char, CStr, CString};
@@ -135,7 +134,7 @@ pub extern "C" fn read_floor(g: &Box<Game>) -> Box<[Pile; 13]> {
     for (i, p) in piles.iter_mut().enumerate() {
         let f = &g.state.floor[i];
         p.value = f.value;
-        p.build = f.mark == Mark::Build;
+        p.build = f.is_build();
         p.owner = f.owner;
         for (j, c) in f.cards.iter().enumerate() {
             p.cards[j] = u8::from(c.to_owned());
