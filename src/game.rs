@@ -24,9 +24,11 @@ impl Game {
         if self.round == 0 {
             self.state.init_deck();
             self.state.shuffle_deck(self.rng.rng_borrow_mut());
+            self.state.deal_hands();
             self.state.deal_floor();
+        } else {
+            self.state.deal_hands();
         }
-        self.state.deal_hands();
     }
 
     /// Move the game state forward one turn
@@ -75,5 +77,88 @@ impl Game {
         } else {
             Ok(())
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::action::Annotation;
+    use crate::card::{Card, Suit, Value};
+    use crate::pile::{Mark, Pile};
+
+    #[test]
+    fn test_sanity() {
+        // Setup with the default seed
+        let mut g = Game::default();
+        g.seed(Seed::default());
+        g.deal();
+
+        // Apply the move *C&3
+        let m = Annotation::new(String::from("*C&3")).to_move();
+        assert!(m.is_ok());
+        assert!(g.apply(m.unwrap()).is_ok());
+
+        // Check that state matches expectations
+        assert_eq!(
+            g.state.floor,
+            vec![
+                Pile::single(Card::create(Value::Four, Suit::Clubs)),
+                Pile::single(Card::create(Value::Seven, Suit::Diamonds)),
+                Pile::single(Card::create(Value::Eight, Suit::Clubs)),
+                Pile::default(), // Pile::single(Card::create(Value::Two, Suit::Spades)),
+                Pile::default(),
+                Pile::default(),
+                Pile::default(),
+                Pile::default(),
+                Pile::default(),
+                Pile::default(),
+                Pile::default(),
+                Pile::default(),
+                Pile::default()
+            ]
+        );
+
+        assert_eq!(
+            g.state.opponent.hand,
+            [
+                Pile::single(Card::create(Value::Ace, Suit::Hearts)),
+                Pile::single(Card::create(Value::King, Suit::Clubs)),
+                Pile::default(), // Pile::single(Card::create(Value::Two, Suit::Diamonds)),
+                Pile::single(Card::create(Value::Ace, Suit::Clubs)),
+                Pile::single(Card::create(Value::Seven, Suit::Clubs)),
+                Pile::single(Card::create(Value::Eight, Suit::Spades)),
+                Pile::single(Card::create(Value::King, Suit::Hearts)),
+                Pile::single(Card::create(Value::Three, Suit::Spades)),
+            ]
+        );
+
+        assert_eq!(
+            g.state.opponent.pairs,
+            vec![Pile::new(
+                vec![
+                    Card::create(Value::Two, Suit::Spades),
+                    Card::create(Value::Two, Suit::Diamonds),
+                ],
+                Value::Two as u8,
+                Mark::Pair,
+            )]
+        );
+
+        assert_eq!(
+            g.state.dealer.hand,
+            [
+                Pile::single(Card::create(Value::Ten, Suit::Diamonds)),
+                Pile::single(Card::create(Value::Four, Suit::Hearts)),
+                Pile::single(Card::create(Value::Ten, Suit::Spades)),
+                Pile::single(Card::create(Value::Five, Suit::Spades)),
+                Pile::single(Card::create(Value::Three, Suit::Diamonds)),
+                Pile::single(Card::create(Value::Five, Suit::Clubs)),
+                Pile::single(Card::create(Value::Six, Suit::Spades)),
+                Pile::single(Card::create(Value::Jack, Suit::Hearts)),
+            ]
+        );
+
+        assert_eq!(g.state.dealer.pairs, vec![]);
     }
 }
