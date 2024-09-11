@@ -169,7 +169,7 @@ impl Pile {
     pub fn build(x: &mut Pile, y: &mut Pile) -> Result<Pile, PileError> {
         Pile::buildable(x)?;
         Pile::buildable(y)?;
-        if x.value == y.value {
+        if x.value == y.value && x.is_single() && y.is_single() {
             Err(PileError::BuildEqualValues)
         } else if x.value + y.value > 10 {
             Err(PileError::BuildHigherThanTen)
@@ -238,6 +238,23 @@ mod tests {
                 vec![Card::new(2, 0), Card::new(3, 0), Card::new(5, 0),],
                 5,
                 Mark::Group
+            ))
+        );
+    }
+
+    #[test]
+    fn test_build_piles_with_same_values() {
+        let mut x = Pile::card(4, 0);
+        let mut y = Pile::card(1, 0);
+        let mut z = Pile::card(3, 0);
+        let temp = Pile::build(&mut y, &mut z);
+        let res = Pile::build(&mut x, &mut temp.unwrap());
+        assert_eq!(
+            res,
+            Ok(Pile::new(
+                vec![Card::new(4, 0), Card::new(1, 0), Card::new(3, 0)],
+                8,
+                Mark::Build
             ))
         );
     }
