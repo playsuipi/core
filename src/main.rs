@@ -96,8 +96,9 @@ fn show_pile(pile: api::Pile, status: &api::Status) -> String {
     }
 }
 
-fn show_hand(hand: [u8; 8]) -> String {
+fn show_hand(hand: [u8; 16]) -> String {
     hand.iter()
+        .take(8) // Current player's cards
         .enumerate()
         .map(|(i, x)| format!("{}=({})", (i as u8 + 49) as char, show_card(x)))
         .collect::<Vec<String>>()
@@ -202,7 +203,7 @@ fn main() {
             println!("\n[*] Opponent's turn:");
         }
         println!("\nFloor: {}", show_floor(api::read_floor(&g), &status));
-        println!("Hand:  {}\n", show_hand(*api::read_hand(&g)));
+        println!("Hand:  {}\n", show_hand(*api::read_hands(&g)));
         unsafe {
             loop {
                 let error = CStr::from_ptr(api::apply_move(&mut g, get_move().as_ptr()))

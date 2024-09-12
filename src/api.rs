@@ -108,15 +108,20 @@ pub extern "C" fn status(g: &Box<Game>) -> Box<Status> {
     })
 }
 
-/// Read the current player's hand
+/// Read both player's hands, the current player's first
 #[no_mangle]
 #[allow(clippy::borrowed_box)]
-pub extern "C" fn read_hand(g: &Box<Game>) -> Box<[u8; 8]> {
-    let mut cards = [0; 8];
-    let p = g.state.player();
+pub extern "C" fn read_hands(g: &Box<Game>) -> Box<[u8; 16]> {
+    let mut cards = [0; 16];
     for (i, c) in cards.iter_mut().enumerate() {
+        let di = i % 8;
+        let p = if g.state.turn ^ (i >= 8) {
+            &g.state.dealer
+        } else {
+            &g.state.opponent
+        };
         *c = u8::from(
-            p.hand[i]
+            p.hand[di]
                 .cards
                 .first()
                 .unwrap_or(&Card::invalid())

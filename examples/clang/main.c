@@ -154,7 +154,7 @@ void print_floor(Game *g, Status *s) {
 
 void print_hand(Game *g) {
     uint8_t cards[HAND_SIZE];
-    memcpy(&cards, read_hand(&g), HAND_SIZE * sizeof(uint8_t));
+    memcpy(&cards, read_hands(&g), HAND_SIZE * sizeof(uint8_t));
     printf("Hand: ");
     for (int i = 0; i < HAND_SIZE; i++) {
         if (i != 0) {
