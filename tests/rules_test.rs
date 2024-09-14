@@ -13,7 +13,7 @@ fn test_cannot_build_over_ten() {
     assert!(res.is_err());
     assert_eq!(
         res.err().unwrap(),
-        StateError::InvalidPile(PileError::BuildHigherThanTen)
+        StateError::InvalidPile(PileError::BuildHigherThanTen).to_string()
     );
 }
 
@@ -24,7 +24,7 @@ fn test_cannot_build_same_values() {
     assert!(res.is_err());
     assert_eq!(
         res.err().unwrap(),
-        StateError::InvalidPile(PileError::BuildEqualValues)
+        StateError::InvalidPile(PileError::BuildEqualValues).to_string()
     );
 }
 
@@ -35,7 +35,7 @@ fn test_cannot_group_different_values() {
     assert!(res.is_err());
     assert_eq!(
         res.err().unwrap(),
-        StateError::InvalidPile(PileError::GroupDifferentValues)
+        StateError::InvalidPile(PileError::GroupDifferentValues).to_string()
     );
 }
 
@@ -46,7 +46,7 @@ fn test_cannot_group_two_singles() {
     assert!(res.is_err());
     assert_eq!(
         res.err().unwrap(),
-        StateError::InvalidPile(PileError::GroupTwoSingles)
+        StateError::InvalidPile(PileError::GroupTwoSingles).to_string()
     );
 }
 
@@ -60,7 +60,7 @@ fn test_cannot_pair_without_a_single() {
     assert!(res.is_err());
     assert_eq!(
         res.err().unwrap(),
-        StateError::InvalidPile(PileError::InvalidPairArg)
+        StateError::InvalidPile(PileError::InvalidPairArg).to_string()
     );
 }
 
@@ -71,7 +71,7 @@ fn test_cannot_pair_different_values() {
     assert!(res.is_err());
     assert_eq!(
         res.err().unwrap(),
-        StateError::InvalidPile(PileError::PairDifferentValues)
+        StateError::InvalidPile(PileError::PairDifferentValues).to_string()
     );
 }
 
@@ -82,7 +82,7 @@ fn test_cannot_duplicate_addresses() {
     assert!(res.is_err());
     assert_eq!(
         res.err().unwrap(),
-        StateError::InvalidMove(MoveError::DuplicateAddress)
+        StateError::InvalidMove(MoveError::DuplicateAddress).to_string()
     );
 }
 
@@ -93,7 +93,7 @@ fn test_cannot_use_multiple_hand_address() {
     assert!(res.is_err());
     assert_eq!(
         res.err().unwrap(),
-        StateError::InvalidMove(MoveError::InvalidHandAddressCount)
+        StateError::InvalidMove(MoveError::InvalidHandAddressCount).to_string()
     );
 }
 
@@ -104,7 +104,7 @@ fn test_cannot_skip_hand_address() {
     assert!(res.is_err());
     assert_eq!(
         res.err().unwrap(),
-        StateError::InvalidMove(MoveError::InvalidHandAddressCount)
+        StateError::InvalidMove(MoveError::InvalidHandAddressCount).to_string()
     );
 }
 
@@ -115,7 +115,7 @@ fn test_cannot_start_pair_with_hand_address() {
     assert!(res.is_err());
     assert_eq!(
         res.err().unwrap(),
-        StateError::InvalidMove(MoveError::InvalidHandAddressPosition)
+        StateError::InvalidMove(MoveError::InvalidHandAddressPosition).to_string()
     );
 }
 
@@ -125,7 +125,7 @@ fn test_cannot_own_multiple_piles() {
     apply_moves(&mut g, vec!["D&B+4", "*A&2"]);
     let res = apply(&mut g, "A+1");
     assert!(res.is_err());
-    assert_eq!(res.err().unwrap(), StateError::OwnTooManyPiles);
+    assert_eq!(res.err().unwrap(), StateError::OwnTooManyPiles.to_string());
 }
 
 #[test]
@@ -133,7 +133,10 @@ fn test_cannot_build_piles_you_cannot_pair() {
     let mut g = setup_default();
     let res = apply(&mut g, "C+8");
     assert!(res.is_err());
-    assert_eq!(res.err().unwrap(), StateError::UnpairablePileValue);
+    assert_eq!(
+        res.err().unwrap(),
+        StateError::UnpairablePileValue.to_string()
+    );
 }
 
 #[test]
@@ -141,5 +144,8 @@ fn test_floor_must_be_unique() {
     let mut g = setup_default();
     let res = apply(&mut g, "A+C+1");
     assert!(res.is_err());
-    assert_eq!(res.err().unwrap(), StateError::DuplicateFloorValue);
+    assert_eq!(
+        res.err().unwrap(),
+        StateError::DuplicateFloorValue.to_string()
+    );
 }

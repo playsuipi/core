@@ -1,6 +1,7 @@
 use crate::action::Annotation;
 use crate::card::Card;
 use crate::game::Game;
+use crate::pile::{Mark, Pile as BasePile};
 use crate::rng::Seed;
 use crate::score::Score;
 use std::ffi::{c_char, CStr, CString};
@@ -23,6 +24,32 @@ impl Default for Pile {
             build: false,
             owner: false,
         }
+    }
+}
+
+impl From<Pile> for BasePile {
+    fn from(pile: Pile) -> BasePile {
+        let cards = pile
+            .cards
+            .iter()
+            .filter(|&&x| x < 52)
+            .map(|&x| Card::from(x))
+            .collect::<Vec<Card>>();
+        BasePile::new(
+            cards.clone(),
+            pile.value,
+            match cards.len() {
+                0 => Mark::Empty,
+                1 => Mark::Single,
+                _ => {
+                    if pile.build {
+                        Mark::Build
+                    } else {
+                        Mark::Group
+                    }
+                }
+            },
+        )
     }
 }
 

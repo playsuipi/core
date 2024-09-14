@@ -1,8 +1,8 @@
-use playsuipi_core::action::Annotation;
+use playsuipi_core::api;
 use playsuipi_core::card::{Card, Suit, Value};
+use playsuipi_core::game::Game;
 use playsuipi_core::pile::{Mark, Pile};
-use playsuipi_core::rng::Rng;
-use playsuipi_core::state::{State, StateError};
+use std::ffi::{CStr, CString};
 
 /// A pile owner
 pub enum Owner {
@@ -20,34 +20,45 @@ impl Into<bool> for Owner {
 }
 
 /// Setup an initial game state
-pub fn setup_default() -> State {
+pub fn setup_default() -> Box<Game> {
     setup([0; 32])
 }
 
 /// Setup an initial game state for the given seed
-pub fn setup(seed: [u8; 32]) -> State {
-    let mut rng = Rng::from_seed(seed);
-    let mut g = State::default();
-    g.init_deck();
-    g.shuffle_deck(rng.rng_borrow_mut());
-    g.deal_hands();
-    g.deal_floor();
-    g
+pub fn setup(seed: [u8; 32]) -> Box<Game> {
+    unsafe { api::new_game(&seed) }
+}
+
+/// Read the current floor state
+pub fn read_floor(g: &Box<Game>) -> Vec<Pile> {
+    api::read_floor(g).iter().map(|&c| c.into()).collect()
+}
+
+/// Read the current player hand states
+pub fn read_hands(g: &Box<Game>) -> Vec<Card> {
+    api::read_hands(g).iter().map(|&c| Card::from(c)).collect()
 }
 
 /// Apply a move to the game from a string annotation
-pub fn apply(g: &mut State, x: &str) -> Result<(), StateError> {
-    match Annotation::new(String::from(x)).to_move() {
-        Ok(m) => g.apply(m),
-        Err(_) => Err(StateError::InvalidInput),
+pub fn apply(g: &mut Box<Game>, x: &str) -> Result<(), String> {
+    let action = CString::new(String::from(x)).unwrap();
+    let error = unsafe {
+        CStr::from_ptr(api::apply_move(g, action.as_ptr()))
+            .to_str()
+            .unwrap()
+    };
+    if error.is_empty() {
+        Ok(())
+    } else {
+        Err(String::from(error))
     }
 }
 
 /// Apply a set of moves to initialize game state
-pub fn apply_moves(g: &mut State, xs: Vec<&str>) {
+pub fn apply_moves(g: &mut Box<Game>, xs: Vec<&str>) {
     for x in xs {
         assert!(apply(g, x).is_ok());
-        g.turn = !g.turn;
+        api::next_turn(g);
     }
 }
 
@@ -76,4 +87,14 @@ pub fn single(v: Value, s: Suit) -> Pile {
 /// Helper for getting an empty pile
 pub fn empty() -> Pile {
     Pile::empty()
+}
+
+/// Helper for creating a card
+pub fn card(v: Value, s: Suit) -> Card {
+    Card::create(v, s)
+}
+
+/// Helper for creating an invalid card
+pub fn blank() -> Card {
+    Card::invalid()
 }

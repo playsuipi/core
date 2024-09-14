@@ -1,4 +1,4 @@
-use playsuipi_core::card::{Card, Suit, Value};
+use playsuipi_core::card::{Suit, Value};
 
 mod common;
 use common::*;
@@ -10,7 +10,7 @@ fn test_pair_two_cards() {
     assert!(apply(&mut g, "*C&3").is_ok());
 
     assert_eq!(
-        g.floor,
+        read_floor(&g),
         vec![
             single(Value::Four, Suit::Clubs),
             single(Value::Seven, Suit::Diamonds),
@@ -29,25 +29,35 @@ fn test_pair_two_cards() {
     );
 
     assert_eq!(
-        g.opponent.hand,
-        [
-            single(Value::Ace, Suit::Hearts),
-            single(Value::King, Suit::Clubs),
-            empty(), // single(Value::Two, Suit::Diamonds),
-            single(Value::Ace, Suit::Clubs),
-            single(Value::Seven, Suit::Clubs),
-            single(Value::Eight, Suit::Spades),
-            single(Value::King, Suit::Hearts),
-            single(Value::Three, Suit::Spades),
+        read_hands(&g),
+        vec![
+            // Opponent hand:
+            card(Value::Ace, Suit::Hearts),
+            card(Value::King, Suit::Clubs),
+            blank(), // card(Value::Two, Suit::Diamonds),
+            card(Value::Ace, Suit::Clubs),
+            card(Value::Seven, Suit::Clubs),
+            card(Value::Eight, Suit::Spades),
+            card(Value::King, Suit::Hearts),
+            card(Value::Three, Suit::Spades),
+            // Dealer hand:
+            card(Value::Ten, Suit::Diamonds),
+            card(Value::Four, Suit::Hearts),
+            card(Value::Ten, Suit::Spades),
+            card(Value::Five, Suit::Spades),
+            card(Value::Three, Suit::Diamonds),
+            card(Value::Five, Suit::Clubs),
+            card(Value::Six, Suit::Spades),
+            card(Value::Jack, Suit::Hearts),
         ]
     );
 
     assert_eq!(
-        g.opponent.pairs,
+        g.state.opponent.pairs,
         vec![pair(
             vec![
-                Card::create(Value::Two, Suit::Spades),
-                Card::create(Value::Two, Suit::Diamonds),
+                card(Value::Two, Suit::Spades),
+                card(Value::Two, Suit::Diamonds),
             ],
             Value::Two,
             Owner::Opponent,
@@ -62,7 +72,7 @@ fn test_discard_from_hand() {
     assert!(apply(&mut g, "!1").is_ok());
 
     assert_eq!(
-        g.floor,
+        read_floor(&g),
         [
             single(Value::Four, Suit::Clubs),
             single(Value::Seven, Suit::Diamonds),
@@ -81,16 +91,26 @@ fn test_discard_from_hand() {
     );
 
     assert_eq!(
-        g.opponent.hand,
-        [
-            empty(), // single(Value::Ace, Suit::Hearts),
-            single(Value::King, Suit::Clubs),
-            single(Value::Two, Suit::Diamonds),
-            single(Value::Ace, Suit::Clubs),
-            single(Value::Seven, Suit::Clubs),
-            single(Value::Eight, Suit::Spades),
-            single(Value::King, Suit::Hearts),
-            single(Value::Three, Suit::Spades),
+        read_hands(&g),
+        vec![
+            // Opponent hand:
+            blank(), // card(Value::Ace, Suit::Hearts),
+            card(Value::King, Suit::Clubs),
+            card(Value::Two, Suit::Diamonds),
+            card(Value::Ace, Suit::Clubs),
+            card(Value::Seven, Suit::Clubs),
+            card(Value::Eight, Suit::Spades),
+            card(Value::King, Suit::Hearts),
+            card(Value::Three, Suit::Spades),
+            // Dealer hand:
+            card(Value::Ten, Suit::Diamonds),
+            card(Value::Four, Suit::Hearts),
+            card(Value::Ten, Suit::Spades),
+            card(Value::Five, Suit::Spades),
+            card(Value::Three, Suit::Diamonds),
+            card(Value::Five, Suit::Clubs),
+            card(Value::Six, Suit::Spades),
+            card(Value::Jack, Suit::Hearts),
         ]
     );
 }
@@ -102,15 +122,15 @@ fn test_build_and_group() {
     assert!(apply(&mut g, "D&B+1").is_ok());
 
     assert_eq!(
-        g.floor,
-        [
+        read_floor(&g),
+        vec![
             single(Value::Four, Suit::Clubs),
             single(Value::Two, Suit::Spades),
             group(
                 vec![
-                    Card::create(Value::Eight, Suit::Clubs),
-                    Card::create(Value::Seven, Suit::Diamonds),
-                    Card::create(Value::Ace, Suit::Hearts),
+                    card(Value::Eight, Suit::Clubs),
+                    card(Value::Seven, Suit::Diamonds),
+                    card(Value::Ace, Suit::Hearts),
                 ],
                 Value::Eight
             ), // single(Value::Eight, Suit::Clubs),
@@ -128,16 +148,26 @@ fn test_build_and_group() {
     );
 
     assert_eq!(
-        g.opponent.hand,
-        [
-            empty(), // single(Value::Ace, Suit::Hearts),
-            single(Value::King, Suit::Clubs),
-            single(Value::Two, Suit::Diamonds),
-            single(Value::Ace, Suit::Clubs),
-            single(Value::Seven, Suit::Clubs),
-            single(Value::Eight, Suit::Spades),
-            single(Value::King, Suit::Hearts),
-            single(Value::Three, Suit::Spades),
+        read_hands(&g),
+        vec![
+            // Opponent hand:
+            blank(), // card(Value::Ace, Suit::Hearts),
+            card(Value::King, Suit::Clubs),
+            card(Value::Two, Suit::Diamonds),
+            card(Value::Ace, Suit::Clubs),
+            card(Value::Seven, Suit::Clubs),
+            card(Value::Eight, Suit::Spades),
+            card(Value::King, Suit::Hearts),
+            card(Value::Three, Suit::Spades),
+            // Dealer hand:
+            card(Value::Ten, Suit::Diamonds),
+            card(Value::Four, Suit::Hearts),
+            card(Value::Ten, Suit::Spades),
+            card(Value::Five, Suit::Spades),
+            card(Value::Three, Suit::Diamonds),
+            card(Value::Five, Suit::Clubs),
+            card(Value::Six, Suit::Spades),
+            card(Value::Jack, Suit::Hearts),
         ]
     );
 }
@@ -152,15 +182,15 @@ fn test_build_two_cards() {
     assert!(apply(&mut g, "D+1").is_ok());
 
     assert_eq!(
-        g.floor,
-        [
+        read_floor(&g),
+        vec![
             single(Value::Five, Suit::Hearts),
             single(Value::King, Suit::Hearts),
             single(Value::Four, Suit::Spades),
             build(
                 vec![
-                    Card::create(Value::Seven, Suit::Clubs),
-                    Card::create(Value::Three, Suit::Hearts),
+                    card(Value::Seven, Suit::Clubs),
+                    card(Value::Three, Suit::Hearts),
                 ],
                 Value::Ten
             ), // single(Value::Seven, Suit::Clubs),
@@ -177,16 +207,26 @@ fn test_build_two_cards() {
     );
 
     assert_eq!(
-        g.opponent.hand,
-        [
-            empty(), // single(Value::Three, Suit::Hearts),
-            single(Value::Four, Suit::Diamonds),
-            single(Value::Queen, Suit::Hearts),
-            single(Value::Eight, Suit::Diamonds),
-            single(Value::King, Suit::Spades),
-            single(Value::Five, Suit::Diamonds),
-            single(Value::Ten, Suit::Diamonds),
-            single(Value::Ten, Suit::Spades),
+        read_hands(&g),
+        vec![
+            // Opponent hand:
+            blank(), // card(Value::Three, Suit::Hearts),
+            card(Value::Four, Suit::Diamonds),
+            card(Value::Queen, Suit::Hearts),
+            card(Value::Eight, Suit::Diamonds),
+            card(Value::King, Suit::Spades),
+            card(Value::Five, Suit::Diamonds),
+            card(Value::Ten, Suit::Diamonds),
+            card(Value::Ten, Suit::Spades),
+            // Dealer hand:
+            card(Value::King, Suit::Diamonds),
+            card(Value::Jack, Suit::Diamonds),
+            card(Value::Four, Suit::Hearts),
+            card(Value::Seven, Suit::Hearts),
+            card(Value::Queen, Suit::Diamonds),
+            card(Value::Six, Suit::Hearts),
+            card(Value::King, Suit::Clubs),
+            card(Value::Jack, Suit::Clubs),
         ]
     );
 }
@@ -201,8 +241,8 @@ fn test_build_and_pair() {
     assert!(apply(&mut g, "*B+C&5").is_ok());
 
     assert_eq!(
-        g.floor,
-        [
+        read_floor(&g),
+        vec![
             single(Value::Ten, Suit::Hearts),
             single(Value::Jack, Suit::Diamonds),
             empty(), // single(Value::Four, Suit::Clubs),
@@ -220,26 +260,36 @@ fn test_build_and_pair() {
     );
 
     assert_eq!(
-        g.opponent.hand,
-        [
-            single(Value::Queen, Suit::Clubs),
-            single(Value::Three, Suit::Spades),
-            single(Value::Eight, Suit::Spades),
-            single(Value::Ten, Suit::Diamonds),
-            empty(), // single(Value::Nine, Suit::Spades),
-            single(Value::Six, Suit::Clubs),
-            single(Value::Ace, Suit::Spades),
-            single(Value::Ten, Suit::Clubs),
+        read_hands(&g),
+        vec![
+            // Opponent hand:
+            card(Value::Queen, Suit::Clubs),
+            card(Value::Three, Suit::Spades),
+            card(Value::Eight, Suit::Spades),
+            card(Value::Ten, Suit::Diamonds),
+            blank(), // card(Value::Nine, Suit::Spades),
+            card(Value::Six, Suit::Clubs),
+            card(Value::Ace, Suit::Spades),
+            card(Value::Ten, Suit::Clubs),
+            // Dealer hand:
+            card(Value::Queen, Suit::Diamonds),
+            card(Value::Five, Suit::Spades),
+            card(Value::Seven, Suit::Diamonds),
+            card(Value::Nine, Suit::Clubs),
+            card(Value::Ace, Suit::Hearts),
+            card(Value::Five, Suit::Hearts),
+            card(Value::Six, Suit::Hearts),
+            card(Value::King, Suit::Clubs),
         ]
     );
 
     assert_eq!(
-        g.opponent.pairs,
+        g.state.opponent.pairs,
         vec![pair(
             vec![
-                Card::create(Value::Four, Suit::Clubs),
-                Card::create(Value::Five, Suit::Diamonds),
-                Card::create(Value::Nine, Suit::Spades),
+                card(Value::Four, Suit::Clubs),
+                card(Value::Five, Suit::Diamonds),
+                card(Value::Nine, Suit::Spades),
             ],
             Value::Nine,
             Owner::Opponent,
@@ -257,8 +307,8 @@ fn test_build_and_group_then_pair() {
     assert!(apply(&mut g, "*A+B&C+D&5").is_ok());
 
     assert_eq!(
-        g.floor,
-        [
+        read_floor(&g),
+        vec![
             empty(), // single(Value::Three, Suit::Diamonds),
             empty(), // single(Value::Four, Suit::Diamonds),
             empty(), // single(Value::Five, Suit::Spades),
@@ -276,28 +326,38 @@ fn test_build_and_group_then_pair() {
     );
 
     assert_eq!(
-        g.opponent.hand,
-        [
-            single(Value::Eight, Suit::Spades),
-            single(Value::Jack, Suit::Clubs),
-            single(Value::Six, Suit::Clubs),
-            single(Value::Eight, Suit::Hearts),
-            empty(), // single(Value::Seven, Suit::Spades),
-            single(Value::Five, Suit::Clubs),
-            single(Value::King, Suit::Hearts),
-            single(Value::Two, Suit::Hearts),
+        read_hands(&g),
+        vec![
+            // Opponent hand:
+            card(Value::Eight, Suit::Spades),
+            card(Value::Jack, Suit::Clubs),
+            card(Value::Six, Suit::Clubs),
+            card(Value::Eight, Suit::Hearts),
+            blank(), // card(Value::Seven, Suit::Spades),
+            card(Value::Five, Suit::Clubs),
+            card(Value::King, Suit::Hearts),
+            card(Value::Two, Suit::Hearts),
+            // Dealer hand:
+            card(Value::Five, Suit::Diamonds),
+            card(Value::Jack, Suit::Hearts),
+            card(Value::Four, Suit::Spades),
+            card(Value::Three, Suit::Spades),
+            card(Value::Ace, Suit::Hearts),
+            card(Value::Ten, Suit::Hearts),
+            card(Value::Queen, Suit::Spades),
+            card(Value::Eight, Suit::Clubs),
         ]
     );
 
     assert_eq!(
-        g.opponent.pairs,
+        g.state.opponent.pairs,
         vec![pair(
             vec![
-                Card::create(Value::Three, Suit::Diamonds),
-                Card::create(Value::Four, Suit::Diamonds),
-                Card::create(Value::Five, Suit::Spades),
-                Card::create(Value::Two, Suit::Diamonds),
-                Card::create(Value::Seven, Suit::Spades),
+                card(Value::Three, Suit::Diamonds),
+                card(Value::Four, Suit::Diamonds),
+                card(Value::Five, Suit::Spades),
+                card(Value::Two, Suit::Diamonds),
+                card(Value::Seven, Suit::Spades),
             ],
             Value::Seven,
             Owner::Opponent,
@@ -318,8 +378,8 @@ fn test_first_round() {
     );
 
     assert_eq!(
-        g.floor,
-        [
+        read_floor(&g),
+        vec![
             single(Value::Jack, Suit::Hearts), // single(Value::Four, Suit::Clubs),
             empty(),                           // single(Value::Seven, Suit::Diamonds),
             empty(),                           // single(Value::Two, Suit::Spades),
@@ -337,65 +397,61 @@ fn test_first_round() {
     );
 
     assert_eq!(
-        g.opponent.hand,
-        [
-            empty(), // single(Value::Ace, Suit::Hearts),
-            empty(), // single(Value::King, Suit::Clubs),
-            empty(), // single(Value::Two, Suit::Diamonds),
-            empty(), // single(Value::Ace, Suit::Clubs),
-            empty(), // single(Value::Seven, Suit::Clubs),
-            empty(), // single(Value::Eight, Suit::Spades),
-            empty(), // single(Value::King, Suit::Hearts),
-            empty(), // single(Value::Three, Suit::Spades),
+        read_hands(&g),
+        vec![
+            // Opponent hand:
+            card(Value::Nine, Suit::Clubs),
+            card(Value::Five, Suit::Hearts),
+            card(Value::King, Suit::Spades),
+            card(Value::Nine, Suit::Diamonds),
+            card(Value::Ace, Suit::Diamonds),
+            card(Value::Eight, Suit::Hearts),
+            card(Value::Queen, Suit::Spades),
+            card(Value::Nine, Suit::Spades),
+            // Dealer hand:
+            card(Value::Six, Suit::Hearts),
+            card(Value::Jack, Suit::Clubs),
+            card(Value::Four, Suit::Spades),
+            card(Value::Five, Suit::Diamonds),
+            card(Value::Two, Suit::Clubs),
+            card(Value::Seven, Suit::Spades),
+            card(Value::Queen, Suit::Diamonds),
+            card(Value::Nine, Suit::Hearts),
         ]
     );
 
     assert_eq!(
-        g.dealer.hand,
-        [
-            empty(), // single(Value::Ten, Suit::Diamonds),
-            empty(), // single(Value::Four, Suit::Hearts),
-            empty(), // single(Value::Ten, Suit::Spades),
-            empty(), // single(Value::Five, Suit::Spades),
-            empty(), // single(Value::Three, Suit::Diamonds),
-            empty(), // single(Value::Five, Suit::Clubs),
-            empty(), // single(Value::Six, Suit::Spades),
-            empty(), // single(Value::Jack, Suit::Hearts),
-        ]
-    );
-
-    assert_eq!(
-        g.opponent.pairs,
+        g.state.opponent.pairs,
         vec![
             pair(
                 vec![
-                    Card::create(Value::Eight, Suit::Clubs),
-                    Card::create(Value::Eight, Suit::Spades),
+                    card(Value::Eight, Suit::Clubs),
+                    card(Value::Eight, Suit::Spades),
                 ],
                 Value::Eight,
                 Owner::Opponent,
             ),
             pair(
                 vec![
-                    Card::create(Value::Seven, Suit::Diamonds),
-                    Card::create(Value::Seven, Suit::Clubs),
+                    card(Value::Seven, Suit::Diamonds),
+                    card(Value::Seven, Suit::Clubs),
                 ],
                 Value::Seven,
                 Owner::Opponent,
             ),
             pair(
                 vec![
-                    Card::create(Value::King, Suit::Hearts),
-                    Card::create(Value::King, Suit::Clubs),
+                    card(Value::King, Suit::Hearts),
+                    card(Value::King, Suit::Clubs),
                 ],
                 Value::King,
                 Owner::Opponent,
             ),
             pair(
                 vec![
-                    Card::create(Value::Ace, Suit::Clubs),
-                    Card::create(Value::Two, Suit::Diamonds),
-                    Card::create(Value::Three, Suit::Spades),
+                    card(Value::Ace, Suit::Clubs),
+                    card(Value::Two, Suit::Diamonds),
+                    card(Value::Three, Suit::Spades),
                 ],
                 Value::Three,
                 Owner::Opponent,
@@ -404,38 +460,38 @@ fn test_first_round() {
     );
 
     assert_eq!(
-        g.dealer.pairs,
+        g.state.dealer.pairs,
         vec![
             pair(
                 vec![
-                    Card::create(Value::Four, Suit::Clubs),
-                    Card::create(Value::Two, Suit::Spades),
-                    Card::create(Value::Six, Suit::Spades),
+                    card(Value::Four, Suit::Clubs),
+                    card(Value::Two, Suit::Spades),
+                    card(Value::Six, Suit::Spades),
                 ],
                 Value::Six,
                 Owner::Dealer,
             ),
             pair(
                 vec![
-                    Card::create(Value::Five, Suit::Spades),
-                    Card::create(Value::Five, Suit::Clubs),
+                    card(Value::Five, Suit::Spades),
+                    card(Value::Five, Suit::Clubs),
                 ],
                 Value::Five,
                 Owner::Dealer,
             ),
             pair(
                 vec![
-                    Card::create(Value::Ace, Suit::Hearts),
-                    Card::create(Value::Three, Suit::Diamonds),
-                    Card::create(Value::Four, Suit::Hearts),
+                    card(Value::Ace, Suit::Hearts),
+                    card(Value::Three, Suit::Diamonds),
+                    card(Value::Four, Suit::Hearts),
                 ],
                 Value::Four,
                 Owner::Dealer,
             ),
             pair(
                 vec![
-                    Card::create(Value::Ten, Suit::Spades),
-                    Card::create(Value::Ten, Suit::Diamonds),
+                    card(Value::Ten, Suit::Spades),
+                    card(Value::Ten, Suit::Diamonds),
                 ],
                 Value::Ten,
                 Owner::Dealer,
@@ -460,8 +516,8 @@ fn test_another_round() {
     );
 
     assert_eq!(
-        g.floor,
-        [
+        read_floor(&g),
+        vec![
             single(Value::King, Suit::Clubs), // single(Value::Four, Suit::Diamonds),
             single(Value::Queen, Suit::Diamonds), // single(Value::Nine, Suit::Diamonds),
             single(Value::Five, Suit::Hearts), // single(Value::Six, Suit::Diamonds),
@@ -479,67 +535,63 @@ fn test_another_round() {
     );
 
     assert_eq!(
-        g.opponent.hand,
-        [
-            empty(), // single(Value::Eight, Suit::Clubs),
-            empty(), // single(Value::Two, Suit::Diamonds),
-            empty(), // single(Value::Nine, Suit::Spades),
-            empty(), // single(Value::Eight, Suit::Spades),
-            empty(), // single(Value::King, Suit::Clubs),
-            empty(), // single(Value::Ten, Suit::Spades),
-            empty(), // single(Value::Eight, Suit::Hearts),
-            empty(), // single(Value::Six, Suit::Spades),
+        read_hands(&g),
+        vec![
+            // Opponent hand:
+            card(Value::Ten, Suit::Clubs),
+            card(Value::Four, Suit::Clubs),
+            card(Value::Ace, Suit::Hearts),
+            card(Value::Ace, Suit::Spades),
+            card(Value::Seven, Suit::Diamonds),
+            card(Value::Queen, Suit::Hearts),
+            card(Value::Jack, Suit::Hearts),
+            card(Value::Jack, Suit::Spades),
+            // Dealer hand:
+            card(Value::Eight, Suit::Diamonds),
+            card(Value::Three, Suit::Spades),
+            card(Value::King, Suit::Hearts),
+            card(Value::Four, Suit::Hearts),
+            card(Value::Six, Suit::Hearts),
+            card(Value::King, Suit::Diamonds),
+            card(Value::Seven, Suit::Clubs),
+            card(Value::Jack, Suit::Clubs),
         ]
     );
 
     assert_eq!(
-        g.dealer.hand,
-        [
-            empty(), // single(Value::Queen, Suit::Diamonds),
-            empty(), // single(Value::Three, Suit::Clubs),
-            empty(), // single(Value::Seven, Suit::Spades),
-            empty(), // single(Value::Five, Suit::Hearts),
-            empty(), // single(Value::Seven, Suit::Hearts),
-            empty(), // single(Value::Ace, Suit::Diamonds),
-            empty(), // single(Value::Six, Suit::Clubs),
-            empty(), // single(Value::Four, Suit::Spades),
-        ]
-    );
-
-    assert_eq!(
-        g.opponent.pairs,
+        g.state.opponent.pairs,
         vec![
             pair(
                 vec![
-                    Card::create(Value::Four, Suit::Diamonds),
-                    Card::create(Value::Two, Suit::Hearts),
-                    Card::create(Value::Six, Suit::Diamonds),
-                    Card::create(Value::Six, Suit::Spades),
+                    card(Value::Four, Suit::Diamonds),
+                    card(Value::Two, Suit::Hearts),
+                    card(Value::Six, Suit::Diamonds),
+                    card(Value::Six, Suit::Spades),
                 ],
                 Value::Six,
                 Owner::Opponent,
             ),
             pair(
                 vec![
-                    Card::create(Value::Nine, Suit::Diamonds),
-                    Card::create(Value::Nine, Suit::Spades),
+                    card(Value::Nine, Suit::Diamonds),
+                    card(Value::Nine, Suit::Spades),
                 ],
                 Value::Nine,
                 Owner::Opponent,
             ),
             pair(
                 vec![
-                    Card::create(Value::Eight, Suit::Clubs),
-                    Card::create(Value::Two, Suit::Diamonds),
-                    Card::create(Value::Ten, Suit::Spades),
+                    card(Value::Eight, Suit::Clubs),
+                    card(Value::Two, Suit::Diamonds),
+                    card(Value::Ten, Suit::Spades),
                 ],
                 Value::Ten,
                 Owner::Opponent,
             ),
             pair(
                 vec![
-                    Card::create(Value::Eight, Suit::Hearts),
-                    Card::create(Value::Eight, Suit::Spades),
+                    card(Value::Eight, Suit::Hearts),
+                    card(Value::Eight, Suit::Spades),
                 ],
                 Value::Eight,
                 Owner::Opponent,
@@ -548,21 +600,21 @@ fn test_another_round() {
     );
 
     assert_eq!(
-        g.dealer.pairs,
+        g.state.dealer.pairs,
         vec![
             pair(
                 vec![
-                    Card::create(Value::Seven, Suit::Hearts),
-                    Card::create(Value::Seven, Suit::Spades),
+                    card(Value::Seven, Suit::Hearts),
+                    card(Value::Seven, Suit::Spades),
                 ],
                 Value::Seven,
                 Owner::Dealer,
             ),
             pair(
                 vec![
-                    Card::create(Value::Three, Suit::Clubs),
-                    Card::create(Value::Ace, Suit::Diamonds),
-                    Card::create(Value::Four, Suit::Spades),
+                    card(Value::Three, Suit::Clubs),
+                    card(Value::Ace, Suit::Diamonds),
+                    card(Value::Four, Suit::Spades),
                 ],
                 Value::Four,
                 Owner::Dealer,
