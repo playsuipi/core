@@ -66,7 +66,7 @@ pub struct Status {
 
 /// API level player scorecard
 #[repr(C)]
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
 pub struct Scorecard {
     pub aces: u8,
     pub most_cards: u8,

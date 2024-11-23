@@ -1,4 +1,5 @@
 use playsuipi_core::api;
+use playsuipi_core::api::Scorecard;
 use playsuipi_core::card::{Card, Suit, Value};
 use playsuipi_core::game::Game;
 use playsuipi_core::pile::{Mark, Pile};
@@ -37,6 +38,37 @@ pub fn read_floor(g: &Box<Game>) -> Vec<Pile> {
 /// Read the current player hand states
 pub fn read_hands(g: &Box<Game>) -> Vec<Card> {
     api::read_hands(g).iter().map(|&c| Card::from(c)).collect()
+}
+
+/// Read the game scorecards
+pub fn get_scores(g: &Box<Game>) -> Box<[Scorecard; 4]> {
+    api::get_scores(g)
+}
+
+/// Get a game scorecard
+pub fn scorecard(
+    aces: u8,
+    most_cards: u8,
+    most_spades: u8,
+    ten_of_diamonds: u8,
+    two_of_spades: u8,
+    suipi_count: u8,
+    total: u8,
+) -> Scorecard {
+    Scorecard {
+        aces,
+        most_cards,
+        most_spades,
+        suipi_count,
+        ten_of_diamonds,
+        two_of_spades,
+        total,
+    }
+}
+
+/// Get a blank scorecard
+pub fn blank_scorecard() -> Scorecard {
+    scorecard(0, 0, 0, 0, 0, 0, 0)
 }
 
 /// Apply a move to the game from a string annotation
