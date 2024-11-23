@@ -22,6 +22,7 @@ impl Game {
     /// Deal cards for a new round
     pub fn deal(&mut self) {
         if self.round == 0 {
+            self.scores.push(Score::from(&self.state));
             self.state.init_deck();
             self.state.shuffle_deck(self.rng.rng_borrow_mut());
             self.state.deal_hands();
@@ -43,16 +44,19 @@ impl Game {
         if self.state.dealer.card_count() == 0 && self.state.opponent.card_count() == 0 {
             // Handle end of game
             if self.state.deck.is_empty() {
-                self.round = 0;
-                self.game += 1;
                 self.state.pickup_floor();
-                self.scores.push(Score::from(&self.state));
+                self.scores[self.game as usize] = Score::from(&self.state);
                 self.state = State::default();
                 self.history = Vec::new();
+                self.round = 0;
+                self.game += 1;
             } else {
                 self.round += 1;
             }
             self.deal();
+        } else {
+            // Bump live scoring every turn
+            self.scores[self.game as usize] = Score::from(&self.state);
         }
     }
 
