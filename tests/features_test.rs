@@ -173,6 +173,138 @@ fn test_build_and_group() {
 }
 
 #[test]
+fn test_build_and_group_with_build() {
+    let mut g = setup([
+        222, 29, 61, 3, 160, 4, 192, 251, 244, 132, 175, 198, 124, 182, 184, 25, 115, 128, 175,
+        188, 165, 160, 176, 189, 23, 178, 49, 163, 86, 158, 145, 248,
+    ]);
+
+    apply_moves(
+        &mut g,
+        vec![
+            "*B&4", "*B&4", "*B&8", "6", "*B&2", "2", "1", "*C&3", "7", "C+8", "5", "C&B+1",
+        ],
+    );
+
+    assert_eq!(
+        read_floor(&g),
+        vec![
+            single(Value::Queen, Suit::Spades),
+            group(
+                vec![
+                    card(Value::Four, Suit::Diamonds),
+                    card(Value::Six, Suit::Hearts),
+                    card(Value::Nine, Suit::Diamonds),
+                    card(Value::Ace, Suit::Diamonds),
+                ],
+                Value::Ten
+            ), // single(Value::Jack, Suit::Hearts),
+            single(Value::Jack, Suit::Spades), // single(Value::Six, Suit::Diamonds),
+            empty(),                           // single(Value::Ten, Suit::Spades),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty()
+        ]
+    );
+
+    assert_eq!(
+        read_hands(&g),
+        vec![
+            // Opponent hand:
+            blank(), // card(Value::Seven, Suit::Spades),
+            blank(), // card(Value::King, Suit::Hearts),
+            card(Value::Ace, Suit::Hearts),
+            blank(), // card(Value::Jack, Suit::Diamonds),
+            blank(), // card(Value::Jack, Suit::Spades),
+            card(Value::Eight, Suit::Spades),
+            blank(), // card(Value::Four, Suit::Diamonds),
+            blank(), // card(Value::Ten, Suit::Clubs),
+            // Dealer hand:
+            blank(), // card(Value::Ace, Suit::Diamonds),
+            blank(), // card(Value::Nine, Suit::Diamonds),
+            blank(), // card(Value::Seven, Suit::Clubs),
+            blank(), // card(Value::Six, Suit::Clubs),
+            card(Value::Eight, Suit::Clubs),
+            blank(), // card(Value::King, Suit::Spades),
+            card(Value::Ten, Suit::Diamonds),
+            blank(), // card(Value::Six, Suit::Hearts),
+        ]
+    );
+}
+
+#[test]
+fn test_hand_address_destination_discard() {
+    let mut g = setup([
+        222, 29, 61, 3, 160, 4, 192, 251, 244, 132, 175, 198, 124, 182, 184, 25, 115, 128, 175,
+        188, 165, 160, 176, 189, 23, 178, 49, 163, 86, 158, 145, 248,
+    ]);
+
+    apply_moves(
+        &mut g,
+        vec![
+            "*B&4", "*B&4", "*B&8", "6", "*B&2", "2", "1", "*C&3", "7", "C+8", "5", "1+B&C",
+        ],
+    );
+
+    assert_eq!(
+        read_floor(&g),
+        vec![
+            single(Value::Queen, Suit::Spades),
+            single(Value::Jack, Suit::Spades), // single(Value::Jack, Suit::Hearts),
+            group(
+                vec![
+                    card(Value::Ace, Suit::Diamonds),
+                    card(Value::Nine, Suit::Diamonds),
+                    card(Value::Four, Suit::Diamonds),
+                    card(Value::Six, Suit::Hearts),
+                ],
+                Value::Ten
+            ), // single(Value::Six, Suit::Diamonds),
+            empty(),                           // single(Value::Ten, Suit::Spades),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty()
+        ]
+    );
+
+    assert_eq!(
+        read_hands(&g),
+        vec![
+            // Opponent hand:
+            blank(), // card(Value::Seven, Suit::Spades),
+            blank(), // card(Value::King, Suit::Hearts),
+            card(Value::Ace, Suit::Hearts),
+            blank(), // card(Value::Jack, Suit::Diamonds),
+            blank(), // card(Value::Jack, Suit::Spades),
+            card(Value::Eight, Suit::Spades),
+            blank(), // card(Value::Four, Suit::Diamonds),
+            blank(), // card(Value::Ten, Suit::Clubs),
+            // Dealer hand:
+            blank(), // card(Value::Ace, Suit::Diamonds),
+            blank(), // card(Value::Nine, Suit::Diamonds),
+            blank(), // card(Value::Seven, Suit::Clubs),
+            blank(), // card(Value::Six, Suit::Clubs),
+            card(Value::Eight, Suit::Clubs),
+            blank(), // card(Value::King, Suit::Spades),
+            card(Value::Ten, Suit::Diamonds),
+            blank(), // card(Value::Six, Suit::Hearts),
+        ]
+    );
+}
+
+#[test]
 fn test_build_two_cards() {
     let mut g = setup([
         62, 136, 82, 123, 15, 88, 230, 198, 158, 233, 24, 104, 252, 215, 233, 118, 133, 47, 6, 62,

@@ -368,13 +368,14 @@ impl State {
                 self.group(destination, b.to_owned())?;
             }
         }
-        self.collapse_floor();
         if let Address::Hand(_) = destination {
             if !pair {
+                self.collapse_floor();
                 self.discard(destination)?;
             }
         }
         self.validate_turn(destination, pair)?;
+        self.collapse_floor();
         Ok(())
     }
 }
