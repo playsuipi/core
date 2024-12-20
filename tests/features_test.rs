@@ -1001,7 +1001,7 @@ fn test_first_game() {
     // Opp    |    1 |          0 |           0 |   0 |  1 |      0 |  2
     // Dealer |    3 |          1 |           1 |   2 |  0 |      0 |  7
     assert_eq!(get_scores(&g)[0], scorecard(1, 0, 0, 0, 1, 0, 2));
-    assert_eq!(get_scores(&g)[1], scorecard(3, 1, 1, 2, 0, 0, 7));
+    assert_eq!(get_scores(&g)[1], scorecard(3, 3, 1, 2, 0, 0, 9));
     assert_eq!(get_scores(&g)[2], blank_scorecard());
     assert_eq!(get_scores(&g)[3], blank_scorecard());
 }

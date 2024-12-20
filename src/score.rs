@@ -128,7 +128,7 @@ impl From<&State> for Score {
         Score {
             dealer_aces: dealer.aces as u8,
             opponent_aces: opp.aces as u8,
-            most_cards: Winner::new(dealer.total_cards, opp.total_cards, 1),
+            most_cards: Winner::new(dealer.total_cards, opp.total_cards, 3),
             most_spades: Winner::new(dealer.total_spades, opp.total_spades, 1),
             suipi_bonus: Winner::new(
                 dealer.suipi_count,
