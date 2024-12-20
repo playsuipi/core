@@ -249,7 +249,9 @@ int main(int argc, char *argv[]) {
             Scorecard scores[4];
             memcpy(&scores, get_scores(&g), 4 * sizeof(Scorecard));
             print_scores(scores[(gameIndex * 2)], scores[(gameIndex * 2) + 1]);
+            printf("\n\n ===== Next Game =====\n\n");
             gameIndex = s->game;
+            roundIndex = s->round;
         } else if (roundIndex != s->round) {
             printf("\n\n ===== Next Round =====\n\n");
             roundIndex = s->round;

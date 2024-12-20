@@ -230,7 +230,14 @@ fn main() {
                     &scores[(game * 2 + 1) as usize],
                 )
             );
+            println!(
+                "\n\
+                ===============\n\
+                == Next Game ==\n\
+                ==============="
+            );
             game = status.game;
+            round = status.round;
         } else if round != status.round {
             println!(
                 "\n\
