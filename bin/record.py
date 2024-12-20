@@ -29,7 +29,7 @@ count = 0
 
 def check_end():
     global count
-    if count >= 52 * 2:
+    if count >= 8 * 12:
         for _ in range(7):
             print(io.recvline().decode("utf-8").replace("\n", ""))
         log.info(f"Log saved to: {log_path}")
