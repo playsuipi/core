@@ -1,4 +1,6 @@
 language = "C"
+no_includes = true
+sys_includes = ["stdbool.h", "stdint.h"]
 autogen_warning = "// NOTE: Append the lines below to ios/Classes/<your>Plugin.h"
 
 [defines]

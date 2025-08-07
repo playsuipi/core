@@ -110,7 +110,7 @@ ndk-home:
 bindings: target/playsuipi_core.h
 
 target/playsuipi_core.h:
-	cbindgen --crate playsuipi_core -c cbindgen.toml | grep -v \#include | uniq > $@
+	cbindgen --crate playsuipi_core -c cbindgen.toml | uniq > $@
 	@echo "[DONE] $@"
 
 ## :
