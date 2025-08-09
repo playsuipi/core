@@ -1005,3 +1005,27 @@ fn test_first_game() {
     assert_eq!(get_scores(&g)[2], blank_scorecard());
     assert_eq!(get_scores(&g)[3], blank_scorecard());
 }
+
+#[test]
+fn test_mid_game_scoring() {
+    let mut g = setup_default();
+
+    apply_moves(
+        &mut g,
+        vec![
+            "*D&6", "*A+C&7", "*A&5", "!8", "!7", "!4", "*B&2", "*B&6", "!1", "B+5", "!4", "*B&2",
+            "B+3", "!3", "*B&8", "*B&1",
+        ],
+    );
+
+    // Test scorecard output:
+    //
+    // Player | Aces | Most Cards | Most Spades | 10♦ | 2♠ | Suipis | Total
+    // ------ | ---- | ---------- | ----------- | --- | -- | ------ | -----
+    // Opp    |    1 |          3 |           0 |   0 |  0 |      1 |  5
+    // Dealer |    1 |          0 |           1 |   0 |  1 |      0 |  3
+    assert_eq!(get_scores(&g)[0], scorecard(1, 3, 0, 0, 0, 1, 5));
+    assert_eq!(get_scores(&g)[1], scorecard(1, 0, 1, 0, 1, 0, 3));
+    assert_eq!(get_scores(&g)[2], blank_scorecard());
+    assert_eq!(get_scores(&g)[3], blank_scorecard());
+}

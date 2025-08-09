@@ -219,13 +219,13 @@ pub extern "C" fn undo(g: &mut Box<Game>) {
 #[allow(clippy::borrowed_box)]
 pub extern "C" fn get_scores(g: &Box<Game>) -> Box<[Scorecard; 4]> {
     let mut scores = [Scorecard::default(); 4];
-    for i in 0..g.game {
-        let j = (i * 2) as usize;
+    for (i, s) in g.scores.iter().enumerate() {
+        let j = i * 2;
         if j > 2 {
             break;
         }
-        scores[j] = Scorecard::opponent(&g.scores[i as usize]);
-        scores[j + 1] = Scorecard::dealer(&g.scores[i as usize]);
+        scores[j] = Scorecard::opponent(s);
+        scores[j + 1] = Scorecard::dealer(s);
     }
     Box::new(scores)
 }
