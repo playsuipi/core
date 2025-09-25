@@ -29,6 +29,67 @@ touch ./seed.txt
 cargo run ./seed.txt
 ```
 
+## Compile for Mobile
+
+Rust needs to install target plugins for each architecture we want to compile
+for. We can do this using the `rustup` tool installed in the "Quick Start".
+
+### Android
+
+**Install Android targets:**
+
+```bash
+rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android
+```
+
+### iOS
+
+**Install nightly rustup channel:**
+
+This allows us to use the latest features in the Rust compiler.
+
+```bash
+rustup target install nightly
+```
+
+**Install iOS target:**
+
+This allows us to compile Rust code for iOS devices.
+
+```bash
+rustup +nightly target add aarch64-apple-ios
+```
+
+**Install cargo lipo command:**
+
+This command lets us build an iOS static library.
+
+```bash
+cargo install cargo-lipo
+```
+
+#### Extra
+
+**Install cbindgen command:**
+
+This tool lets us generate a C header file with bindings for our library.
+
+> We don't need this unless we update the core library...
+
+```bash
+cargo install cbindgen
+```
+
+**Install macOS targets:**
+
+This allows us to compile Rust code for iOS devices.
+
+> For non-Apple Silicon devices we need `x86_64` support.
+
+```bash
+rustup +nightly target add aarch64-apple-ios x86_64-apple-ios
+```
+
 ## Testing
 
 Run the unit and integration tests.
