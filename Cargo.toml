@@ -7,6 +7,10 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib", "rlib", "staticlib"]
 
+[[bin]]
+name = "playsuipi_game"
+path = "src/main.rs"
+
 [dependencies]
 rand = "0.8.4"
 rand_chacha = "0.3.1"
