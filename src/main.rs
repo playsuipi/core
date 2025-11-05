@@ -168,10 +168,7 @@ fn get_seed<R: Read>(r: R) -> IOResult<[u8; 32]> {
     let mut seed = [0; 32];
     lines
         .split('\n')
-        .filter_map(|str| match str.parse::<u8>() {
-            Ok(x) => Some(x),
-            Err(_) => None,
-        })
+        .filter_map(|str| str.parse::<u8>().ok())
         .enumerate()
         .for_each(|(i, x)| seed[i] = x);
     Ok(seed)
