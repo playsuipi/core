@@ -29,12 +29,40 @@ touch ./seed.txt
 cargo run ./seed.txt
 ```
 
-## Compile for Mobile
+## Cross Platform Setup
 
 Rust needs to install target plugins for each architecture we want to compile
 for. We can do this using the `rustup` tool installed in the "Quick Start".
 
-### Android
+### Quick Cross Platform Setup
+
+```bash
+make init
+```
+
+> The `make init` command will install all of the Rust targets listed below.
+
+**Build Android Libraries:**
+
+```bash
+make android
+```
+
+**Build iOS Libraries:**
+
+```bash
+make ios
+```
+
+**Build macOS Libraries:**
+
+```bash
+make macos
+```
+
+### Manual Cross Platform Setup
+
+#### Android
 
 **Install Android targets:**
 
@@ -42,52 +70,44 @@ for. We can do this using the `rustup` tool installed in the "Quick Start".
 rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android
 ```
 
-### iOS
+#### iOS
 
-**Install nightly rustup channel:**
-
-This allows us to use the latest features in the Rust compiler.
-
-```bash
-rustup target install nightly
-```
-
-**Install iOS target:**
+**Install iOS targets:**
 
 This allows us to compile Rust code for iOS devices.
 
 ```bash
-rustup +nightly target add aarch64-apple-ios
+rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
 ```
 
-**Install cargo lipo command:**
+#### macOS
 
-This command lets us build an iOS static library.
+**Install macOS targets:**
+
+This allows us to compile Rust code for macOS devices.
 
 ```bash
-cargo install cargo-lipo
+rustup target add aarch64-apple-darwin x86_64-apple-darwin
 ```
 
-#### Extra
+## FFI Setup
 
 **Install cbindgen command:**
 
 This tool lets us generate a C header file with bindings for our library.
 
-> We don't need this unless we update the core library...
-
 ```bash
 cargo install cbindgen
 ```
 
-**Install macOS targets:**
+**Generate header file:**
 
-This allows us to compile Rust code for iOS devices.
-
-> For non-Apple Silicon devices we need `x86_64` support.
+This C header file can be used to generate
+[FFI](https://en.wikipedia.org/wiki/Foreign_function_interface) bindings for
+different languages.
 
 ```bash
-rustup +nightly target add aarch64-apple-ios x86_64-apple-ios
+cbindgen --crate playsuipi_core -c cbindgen.toml > target/playsuipi_core.h
 ```
 
 ## Testing

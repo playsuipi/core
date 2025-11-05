@@ -29,11 +29,11 @@ help: Makefile
 ## init: Install missing dependencies.
 .PHONY: init
 init:
-	rustup target add aarch64-apple-ios x86_64-apple-ios
-	rustup target add aarch64-apple-darwin x86_64-apple-darwin
-	#rustup target add armv7-apple-ios armv7s-apple-ios i386-apple-ios ## deprecated
+	@if [ $$(uname) == "Darwin" ] ; then \
+		rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios \
+		rustup target add aarch64-apple-darwin x86_64-apple-darwin \
+		; fi
 	rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
-	@if [ $$(uname) == "Darwin" ] ; then cargo install cargo-lipo ; fi
 	cargo install cbindgen
 
 ## :
@@ -46,28 +46,44 @@ init:
 all: ios macos android bindings
 
 ## ios: Compile the iOS universal library
-ios: target/universal/release/libplaysuipi_core.a
+ios: target/aarch64-apple-ios/release/libplaysuipi_core.a target/aarch64-apple-ios-sim/release/libplaysuipi_core.a target/x86_64-apple-ios/release/libplaysuipi_core.a
 
-target/universal/release/libplaysuipi_core.a: $(SOURCES)
+target/aarch64-apple-ios/release/libplaysuipi_core.a: $(SOURCES)
 	@if [ $$(uname) == "Darwin" ] ; then \
-		cargo lipo --release ; \
+		cargo build --target aarch64-apple-ios --release ; \
 		else echo "Skipping iOS compilation on $$(uname)" ; \
 	fi
 	@echo "[DONE] $@"
 
-## macos: Compile the macOS libraries
-macos: target/x86_64-apple-darwin/release/libplaysuipi_core.dylib target/aarch64-apple-darwin/release/libplaysuipi_core.dylib
-
-target/x86_64-apple-darwin/release/libplaysuipi_core.dylib: $(SOURCES)
+target/aarch64-apple-ios-sim/release/libplaysuipi_core.a: $(SOURCES)
 	@if [ $$(uname) == "Darwin" ] ; then \
-		cargo lipo --release --targets x86_64-apple-darwin ; \
+		cargo build --target aarch64-apple-ios-sim --release ; \
+		else echo "Skipping iOS compilation on $$(uname)" ; \
+	fi
+	@echo "[DONE] $@"
+
+target/x86_64-apple-ios/release/libplaysuipi_core.a: $(SOURCES)
+	@if [ $$(uname) == "Darwin" ] ; then \
+		cargo build --target x86_64-apple-ios --release ; \
+		else echo "Skipping iOS compilation on $$(uname)" ; \
+	fi
+	@echo "[DONE] $@"
+
+
+
+## macos: Compile the macOS libraries
+macos: target/x86_64-apple-darwin/release/libplaysuipi_core.a target/aarch64-apple-darwin/release/libplaysuipi_core.a
+
+target/aarch64-apple-darwin/release/libplaysuipi_core.a: $(SOURCES)
+	@if [ $$(uname) == "Darwin" ] ; then \
+		cargo build --target aarch64-apple-darwin --release ; \
 		else echo "Skipping macOS compilation on $$(uname)" ; \
 	fi
 	@echo "[DONE] $@"
 
-target/aarch64-apple-darwin/release/libplaysuipi_core.dylib: $(SOURCES)
+target/x86_64-apple-darwin/release/libplaysuipi_core.a: $(SOURCES)
 	@if [ $$(uname) == "Darwin" ] ; then \
-		cargo lipo --release --targets aarch64-apple-darwin ; \
+		cargo build --target x86_64-apple-darwin --release ; \
 		else echo "Skipping macOS compilation on $$(uname)" ; \
 	fi
 	@echo "[DONE] $@"
