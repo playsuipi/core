@@ -72,6 +72,12 @@ rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-andro
 
 #### iOS
 
+**Enable Rust nightly toolchain:**
+
+```bash
+rustup toolchain install nightly
+```
+
 **Install iOS targets:**
 
 This allows us to compile Rust code for iOS devices.

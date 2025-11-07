@@ -30,10 +30,10 @@ help: Makefile
 .PHONY: init
 init:
 	@if [ $$(uname) == "Darwin" ] ; then \
-		rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios \
-		rustup target add aarch64-apple-darwin x86_64-apple-darwin \
-		; fi
-	rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+		rustup +nightly target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios ; \
+		rustup +stable target add aarch64-apple-darwin x86_64-apple-darwin ; \
+		fi
+	rustup +stable target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
 	cargo install cbindgen
 
 ## :
@@ -50,21 +50,21 @@ ios: target/aarch64-apple-ios/release/libplaysuipi_core.a target/aarch64-apple-i
 
 target/aarch64-apple-ios/release/libplaysuipi_core.a: $(SOURCES)
 	@if [ $$(uname) == "Darwin" ] ; then \
-		cargo build --target aarch64-apple-ios --release ; \
+		cargo +nightly build --target aarch64-apple-ios --release ; \
 		else echo "Skipping iOS compilation on $$(uname)" ; \
 	fi
 	@echo "[DONE] $@"
 
 target/aarch64-apple-ios-sim/release/libplaysuipi_core.a: $(SOURCES)
 	@if [ $$(uname) == "Darwin" ] ; then \
-		cargo build --target aarch64-apple-ios-sim --release ; \
+		cargo +nightly build --target aarch64-apple-ios-sim --release ; \
 		else echo "Skipping iOS compilation on $$(uname)" ; \
 	fi
 	@echo "[DONE] $@"
 
 target/x86_64-apple-ios/release/libplaysuipi_core.a: $(SOURCES)
 	@if [ $$(uname) == "Darwin" ] ; then \
-		cargo build --target x86_64-apple-ios --release ; \
+		cargo +nightly build --target x86_64-apple-ios --release ; \
 		else echo "Skipping iOS compilation on $$(uname)" ; \
 	fi
 	@echo "[DONE] $@"
@@ -76,14 +76,14 @@ macos: target/x86_64-apple-darwin/release/libplaysuipi_core.a target/aarch64-app
 
 target/aarch64-apple-darwin/release/libplaysuipi_core.a: $(SOURCES)
 	@if [ $$(uname) == "Darwin" ] ; then \
-		cargo build --target aarch64-apple-darwin --release ; \
+		cargo +stable build --target aarch64-apple-darwin --release ; \
 		else echo "Skipping macOS compilation on $$(uname)" ; \
 	fi
 	@echo "[DONE] $@"
 
 target/x86_64-apple-darwin/release/libplaysuipi_core.a: $(SOURCES)
 	@if [ $$(uname) == "Darwin" ] ; then \
-		cargo build --target x86_64-apple-darwin --release ; \
+		cargo +stable build --target x86_64-apple-darwin --release ; \
 		else echo "Skipping macOS compilation on $$(uname)" ; \
 	fi
 	@echo "[DONE] $@"
@@ -94,25 +94,25 @@ android: target/aarch64-linux-android/release/libplaysuipi_core.so target/armv7-
 target/aarch64-linux-android/release/libplaysuipi_core.so: $(SOURCES) ndk-home
 	CC_aarch64_linux_android=$(ANDROID_AARCH64_LINKER) \
 	CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$(ANDROID_AARCH64_LINKER) \
-		cargo build --target aarch64-linux-android --release
+		cargo +stable build --target aarch64-linux-android --release
 	@echo "[DONE] $@"
 
 target/armv7-linux-androideabi/release/libplaysuipi_core.so: $(SOURCES) ndk-home
 	CC_armv7_linux_androideabi=$(ANDROID_ARMV7_LINKER) \
 	CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_LINKER=$(ANDROID_ARMV7_LINKER) \
-		cargo build --target armv7-linux-androideabi --release
+		cargo +stable build --target armv7-linux-androideabi --release
 	@echo "[DONE] $@"
 
 target/i686-linux-android/release/libplaysuipi_core.so: $(SOURCES) ndk-home
 	CC_i686_linux_android=$(ANDROID_I686_LINKER) \
 	CARGO_TARGET_I686_LINUX_ANDROID_LINKER=$(ANDROID_I686_LINKER) \
-		cargo  build --target i686-linux-android --release
+		cargo +stable build --target i686-linux-android --release
 	@echo "[DONE] $@"
 
 target/x86_64-linux-android/release/libplaysuipi_core.so: $(SOURCES) ndk-home
 	CC_x86_64_linux_android=$(ANDROID_X86_64_LINKER) \
 	CARGO_TARGET_X86_64_LINUX_ANDROID_LINKER=$(ANDROID_X86_64_LINKER) \
-		cargo build --target x86_64-linux-android --release
+		cargo +stable build --target x86_64-linux-android --release
 	@echo "[DONE] $@"
 		
 .PHONY: ndk-home
