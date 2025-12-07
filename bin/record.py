@@ -9,7 +9,7 @@ import sys
 from pwn import *
 
 
-binary = args.BINARY or "./target/debug/playsuipi_core"
+binary = args.BINARY or "./target/debug/playsuipi_game"
 elf = ELF(binary)
 
 
