@@ -767,9 +767,9 @@ fn test_first_game() {
         &mut g,
         vec![
             "*A&2", "*A&4", "*A&1", "*A&7", "6", "3", "8", "*B&1", "*B&3", "6", "*B&5", "8", "4",
-            "B+2", "*B&7", "5", "*B&3", "*A&1", "7", "4", "8", "C&D+3", "B+6", "C&B+5", "4",
-            "*C&2", "1", "B&6", "2", "*B&7", "5", "8", "*D+C&8", "*A&7", "*B&5", "1", "*A&1",
-            "A+8", "3", "A&4", "B+6", "*B&5", "7", "*A&3", "*A&2", "2", "4",
+            "B+2", "*B&7", "5", "*B&3", "*A&1", "7", "4", "8", "C&D+3", "B+6", "*C&7", "*B&5",
+            "!2", "*B&4", "!8", "!1", "!5", "!2", "!6", "*D+E&3", "*D&1", "*C&1", "!5", "*C&2",
+            "!3", "*B&5", "*B&4", "!6", "!2", "*B&4", "!8", "*B+C&7", "*A&7", "!8",
         ],
     );
 
@@ -827,19 +827,28 @@ fn test_first_game() {
             ),
             pair(
                 vec![
+                    card(Value::Five, Suit::Diamonds),
+                    card(Value::Ace, Suit::Hearts),
                     card(Value::Six, Suit::Diamonds),
-                    card(Value::Three, Suit::Spades),
-                    card(Value::Nine, Suit::Diamonds),
                 ],
-                Value::Nine,
+                Value::Six,
                 Owner::Opponent,
             ),
             pair(
                 vec![
-                    card(Value::King, Suit::Spades),
-                    card(Value::King, Suit::Hearts),
+                    card(Value::Jack, Suit::Diamonds),
+                    card(Value::Jack, Suit::Clubs),
                 ],
-                Value::King,
+                Value::Jack,
+                Owner::Opponent,
+            ),
+            pair(
+                vec![
+                    card(Value::Ace, Suit::Clubs),
+                    card(Value::Three, Suit::Spades),
+                    card(Value::Four, Suit::Clubs),
+                ],
+                Value::Four,
                 Owner::Opponent,
             ),
             pair(
@@ -852,8 +861,33 @@ fn test_first_game() {
             ),
             pair(
                 vec![
-                    card(Value::Six, Suit::Clubs),
+                    card(Value::Six, Suit::Hearts),
                     card(Value::Six, Suit::Spades),
+                ],
+                Value::Six,
+                Owner::Opponent,
+            ),
+            pair(
+                vec![
+                    card(Value::King, Suit::Spades),
+                    card(Value::King, Suit::Hearts),
+                ],
+                Value::King,
+                Owner::Opponent,
+            ),
+            pair(
+                vec![
+                    card(Value::Two, Suit::Clubs),
+                    card(Value::Two, Suit::Spades),
+                ],
+                Value::Two,
+                Owner::Opponent,
+            ),
+            pair(
+                vec![
+                    card(Value::Five, Suit::Clubs),
+                    card(Value::Ace, Suit::Spades),
+                    card(Value::Six, Suit::Clubs),
                 ],
                 Value::Six,
                 Owner::Opponent,
@@ -898,24 +932,28 @@ fn test_first_game() {
             ),
             pair(
                 vec![
-                    card(Value::Jack, Suit::Clubs),
-                    card(Value::Jack, Suit::Diamonds),
+                    card(Value::Seven, Suit::Hearts),
+                    card(Value::Three, Suit::Diamonds),
+                    card(Value::Four, Suit::Spades),
+                    card(Value::Seven, Suit::Spades),
                 ],
-                Value::Jack,
+                Value::Seven,
                 Owner::Dealer,
             ),
             pair(
                 vec![
-                    card(Value::Seven, Suit::Hearts),
-                    card(Value::Three, Suit::Diamonds),
-                    card(Value::Four, Suit::Spades),
-                    card(Value::Five, Suit::Diamonds),
-                    card(Value::Ace, Suit::Hearts),
-                    card(Value::Ace, Suit::Clubs),
                     card(Value::Seven, Suit::Clubs),
-                    card(Value::Seven, Suit::Spades),
+                    card(Value::Seven, Suit::Diamonds),
                 ],
                 Value::Seven,
+                Owner::Dealer,
+            ),
+            pair(
+                vec![
+                    card(Value::Eight, Suit::Hearts),
+                    card(Value::Eight, Suit::Clubs),
+                ],
+                Value::Eight,
                 Owner::Dealer,
             ),
             pair(
@@ -924,25 +962,6 @@ fn test_first_game() {
                     card(Value::Ten, Suit::Spades),
                 ],
                 Value::Ten,
-                Owner::Dealer,
-            ),
-            pair(
-                vec![
-                    card(Value::Four, Suit::Clubs),
-                    card(Value::Two, Suit::Clubs),
-                    card(Value::Six, Suit::Hearts),
-                ],
-                Value::Six,
-                Owner::Dealer,
-            ),
-            pair(
-                vec![
-                    card(Value::Seven, Suit::Diamonds),
-                    card(Value::Ace, Suit::Spades),
-                    card(Value::Eight, Suit::Clubs),
-                    card(Value::Eight, Suit::Hearts),
-                ],
-                Value::Eight,
                 Owner::Dealer,
             ),
         ]
@@ -998,10 +1017,10 @@ fn test_first_game() {
     //
     // Player | Aces | Most Cards | Most Spades | 10♦ | 2♠ | Suipis | Total
     // ------ | ---- | ---------- | ----------- | --- | -- | ------ | -----
-    // Opp    |    1 |          0 |           0 |   0 |  1 |      0 |  2
-    // Dealer |    3 |          1 |           1 |   2 |  0 |      0 |  7
-    assert_eq!(get_scores(&g)[0], scorecard(1, 0, 0, 0, 1, 0, 2));
-    assert_eq!(get_scores(&g)[1], scorecard(3, 3, 1, 2, 0, 0, 9));
+    // Opp    |    4 |          3 |           1 |   0 |  1 |      0 |  9
+    // Dealer |    0 |          0 |           0 |   2 |  0 |      2 |  4
+    assert_eq!(get_scores(&g)[0], scorecard(4, 3, 1, 0, 1, 0, 9));
+    assert_eq!(get_scores(&g)[1], scorecard(0, 0, 0, 2, 0, 2, 4));
     assert_eq!(get_scores(&g)[2], blank_scorecard());
     assert_eq!(get_scores(&g)[3], blank_scorecard());
 }
