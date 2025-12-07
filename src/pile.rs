@@ -169,7 +169,10 @@ impl Pile {
     pub fn build(x: &mut Pile, y: &mut Pile) -> Result<Pile, PileError> {
         Pile::buildable(x)?;
         Pile::buildable(y)?;
-        if x.value == y.value && x.is_single() && y.is_single() {
+        if x.cards
+            .iter()
+            .any(|xc| y.cards.iter().any(|yc| xc.value == yc.value))
+        {
             Err(PileError::BuildEqualValues)
         } else if x.value + y.value > 10 {
             Err(PileError::BuildHigherThanTen)
@@ -257,6 +260,19 @@ mod tests {
                 Mark::Build
             ))
         );
+    }
+
+    #[test]
+    fn test_build_cards_with_same_values() {
+        let mut x = Pile::card(3, 0);
+        let mut y = Pile::card(2, 0);
+        let mut z = Pile::card(2, 1);
+        let temp = Pile::build(&mut y, &mut z);
+        assert_eq!(temp, Err(PileError::BuildEqualValues));
+        // Separate like values
+        let temp2 = Pile::build(&mut x, &mut y);
+        let res = Pile::build(&mut z, &mut temp2.unwrap());
+        assert_eq!(res, Err(PileError::BuildEqualValues));
     }
 
     #[test]
