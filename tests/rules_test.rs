@@ -149,3 +149,24 @@ fn test_floor_must_be_unique() {
         StateError::DuplicateFloorValue.to_string()
     );
 }
+
+#[test]
+fn test_cannot_orphan_owned_pile() {
+    let mut g = setup([
+        156, 69, 3, 119, 217, 73, 100, 245, 25, 0, 13, 180, 77, 217, 127, 113, 188, 61, 115, 22,
+        13, 229, 255, 166, 56, 212, 40, 145, 67, 218, 143, 98,
+    ]);
+    apply_moves(
+        &mut g,
+        vec![
+            "*A+D&6", "*A&3", "!7", "*A&7", "*A&5", "!6", "!2", "*A+B&8", "!4", "!5", "!1", "!1",
+            "!8", "!2", "!3", "!4", "*D+F&1", "*A&1", "*E&5", "*C&2", "*C&7", "!4", "*A&2", "*B&6",
+            "!8", "!5", "*C&3", "!3", "!4", "!8", "!6", "!7", "E+F+7", "*A&3", "*C&8", "*B&8",
+            "*A&3", "!4",
+        ],
+    );
+    // Attempt to pair a 10, while owning a separate 10 pile on the floor
+    let res = apply(&mut g, "*B+C&6");
+    assert!(res.is_err());
+    assert_eq!(res.err().unwrap(), StateError::OrphanedPile.to_string());
+}

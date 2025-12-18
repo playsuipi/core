@@ -15,6 +15,7 @@ pub enum StateError {
     InvalidPile(PileError),
     FloorIsFull,
     PileIsNotEmpty,
+    OrphanedPile,
     OwnTooManyPiles,
     UnpairablePileValue,
     DuplicateFloorValue,
@@ -45,6 +46,7 @@ impl fmt::Display for StateError {
                 StateError::InvalidPile(e) => format!("Invalid pile - {}", e),
                 StateError::FloorIsFull => "Floor is full".to_string(),
                 StateError::PileIsNotEmpty => "Pile is not empty".to_string(),
+                StateError::OrphanedPile => "You may not abandon your own pile".to_string(),
                 StateError::OwnTooManyPiles => "Owning too may piles".to_string(),
                 StateError::UnpairablePileValue => "Un-pairable pile value".to_string(),
                 StateError::DuplicateFloorValue => "Duplicate floor card".to_string(),
@@ -338,6 +340,13 @@ impl State {
             Err(StateError::OwnTooManyPiles)
         } else if !pair && !self.player().hand.iter().any(|x| x.value == piles[i].value) {
             Err(StateError::UnpairablePileValue)
+        } else if self
+            .floor
+            .iter()
+            .filter(|x| x.cards.len() > 1 && x.owner == self.turn)
+            .any(|x| self.player().hand.iter().all(|y| y.value != x.value))
+        {
+            Err(StateError::OrphanedPile)
         } else if !self.unique_floor() {
             Err(StateError::DuplicateFloorValue)
         } else {
