@@ -1,4 +1,5 @@
 use playsuipi_core::action::MoveError;
+use playsuipi_core::card::{Suit, Value};
 use playsuipi_core::pile::PileError;
 use playsuipi_core::state::StateError;
 
@@ -56,7 +57,7 @@ fn test_cannot_pair_without_a_single() {
         84, 203, 45, 46, 121, 160, 195, 38, 74, 65, 246, 230, 155, 184, 39, 49, 159, 197, 58, 163,
         223, 210, 157, 16, 155, 11, 149, 244, 232, 186, 101, 69,
     ]);
-    let res = apply(&mut g, "*B+C&D+3");
+    let res = apply(&mut g, "*A+B&C+7");
     assert!(res.is_err());
     assert_eq!(
         res.err().unwrap(),
@@ -156,17 +157,36 @@ fn test_cannot_orphan_owned_pile() {
         156, 69, 3, 119, 217, 73, 100, 245, 25, 0, 13, 180, 77, 217, 127, 113, 188, 61, 115, 22,
         13, 229, 255, 166, 56, 212, 40, 145, 67, 218, 143, 98,
     ]);
-    apply_moves(
-        &mut g,
-        vec![
-            "*A+D&6", "*A&3", "!7", "*A&7", "*A&5", "!6", "!2", "*A+B&8", "!4", "!5", "!1", "!1",
-            "!8", "!2", "!3", "!4", "*D+F&1", "*A&1", "*E&5", "*C&2", "*C&7", "!4", "*A&2", "*B&6",
-            "!8", "!5", "*C&3", "!3", "!4", "!8", "!6", "!7", "E+F+7", "*A&3", "*C&8", "*B&8",
-            "*A&3", "!4",
-        ],
-    );
+    apply_moves(&mut g, vec!["!6", "*B&3", "C&D+2", "!1"]);
     // Attempt to pair a 10, while owning a separate 10 pile on the floor
-    let res = apply(&mut g, "*B+C&6");
+    let res = apply(&mut g, "*A+D&1");
     assert!(res.is_err());
     assert_eq!(res.err().unwrap(), StateError::OrphanedPile.to_string());
+}
+
+#[test]
+fn test_point_cards_are_not_dealt_to_floor() {
+    // The Ace of Spades and Two of Spades are 2 of the first 4 cards in this deck.
+    let g = setup([
+        226, 103, 1, 81, 188, 16, 154, 239, 213, 51, 217, 48, 242, 133, 245, 4, 163, 223, 46, 225,
+        38, 252, 30, 67, 170, 119, 127, 186, 218, 69, 125, 66,
+    ]);
+    assert_eq!(
+        read_floor(&g),
+        vec![
+            single(Value::Four, Suit::Clubs),
+            single(Value::Queen, Suit::Spades),
+            single(Value::Six, Suit::Spades),
+            single(Value::King, Suit::Hearts),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty(),
+            empty()
+        ]
+    );
 }

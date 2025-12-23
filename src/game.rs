@@ -110,7 +110,7 @@ mod tests {
                 Pile::single(Card::create(Value::Four, Suit::Clubs)),
                 Pile::single(Card::create(Value::Seven, Suit::Diamonds)),
                 Pile::single(Card::create(Value::Eight, Suit::Clubs)),
-                Pile::default(), // Pile::single(Card::create(Value::Two, Suit::Spades)),
+                Pile::default(), // Pile::single(Card::create(Value::Two, Suit::Hearts)),
                 Pile::default(),
                 Pile::default(),
                 Pile::default(),
@@ -141,7 +141,7 @@ mod tests {
             g.state.opponent.pairs,
             vec![Pile::new(
                 vec![
-                    Card::create(Value::Two, Suit::Spades),
+                    Card::create(Value::Two, Suit::Hearts),
                     Card::create(Value::Two, Suit::Diamonds),
                 ],
                 Value::Two as u8,

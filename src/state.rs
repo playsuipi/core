@@ -1,5 +1,5 @@
 use crate::action::{Address, Move, MoveError, Operation};
-use crate::card::{Card, Value};
+use crate::card::{Card, Suit, Value};
 use crate::pile::{Mark, Pile, PileError};
 use crate::rng::{ChaCha20Rng, SliceRandom};
 use std::collections::{HashSet, VecDeque};
@@ -138,6 +138,15 @@ impl State {
             .all(|v| unique.insert(v))
     }
 
+    /// Verify that point cards are not dealt to the floor
+    pub fn valid_floor(&self) -> bool {
+        self.floor.iter().flat_map(|p| &p.cards).all(|c| {
+            (c.value != Value::Ace as u8)
+                && !((c.suit == Suit::Diamonds as u8 && c.value == Value::Ten as u8)
+                    || (c.suit == Suit::Spades as u8 && c.value == Value::Two as u8))
+        })
+    }
+
     /// Deal four unique cards to the floor
     pub fn deal_floor(&mut self) {
         self.floor = vec![];
@@ -146,7 +155,7 @@ impl State {
             while self.floor[i].is_empty() {
                 let x = self.deal_pile();
                 self.floor[i].replace(x);
-                if !self.unique_floor() {
+                if !self.unique_floor() || !self.valid_floor() {
                     for c in self.floor[i].take().cards.iter().copied() {
                         self.deck.push_back(c);
                     }
@@ -470,7 +479,7 @@ mod tests {
             [
                 single(Value::Four, Suit::Clubs),
                 single(Value::Seven, Suit::Diamonds),
-                single(Value::Two, Suit::Spades),
+                single(Value::Two, Suit::Hearts),
                 single(Value::Eight, Suit::Clubs),
                 empty(),
                 empty(),
@@ -533,7 +542,7 @@ mod tests {
             g.opponent.pairs,
             vec![pair(
                 vec![
-                    Card::create(Value::Two, Suit::Spades),
+                    Card::create(Value::Two, Suit::Hearts),
                     Card::create(Value::Two, Suit::Diamonds),
                 ],
                 Value::Two
@@ -553,7 +562,7 @@ mod tests {
                 build(
                     vec![
                         Card::create(Value::Four, Suit::Clubs),
-                        Card::create(Value::Two, Suit::Spades),
+                        Card::create(Value::Two, Suit::Hearts),
                     ],
                     Value::Six
                 ),
@@ -592,7 +601,7 @@ mod tests {
                     Value::Seven
                 ),
                 empty(),
-                single(Value::Two, Suit::Spades),
+                single(Value::Two, Suit::Hearts),
                 single(Value::Eight, Suit::Clubs),
                 empty(),
                 empty(),
@@ -620,7 +629,7 @@ mod tests {
             [
                 empty(),
                 empty(),
-                single(Value::Two, Suit::Spades),
+                single(Value::Two, Suit::Hearts),
                 single(Value::Eight, Suit::Clubs),
                 empty(),
                 empty(),
@@ -673,7 +682,7 @@ mod tests {
             [
                 single(Value::Four, Suit::Clubs),
                 single(Value::Seven, Suit::Diamonds),
-                single(Value::Two, Suit::Spades),
+                single(Value::Two, Suit::Hearts),
                 single(Value::Eight, Suit::Clubs),
                 single(Value::Ace, Suit::Hearts),
                 empty(),

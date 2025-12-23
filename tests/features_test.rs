@@ -15,7 +15,7 @@ fn test_pair_two_cards() {
             single(Value::Four, Suit::Clubs),
             single(Value::Seven, Suit::Diamonds),
             single(Value::Eight, Suit::Clubs),
-            empty(), // single(Value::Two, Suit::Spades),
+            empty(), // single(Value::Two, Suit::Hearts),
             empty(),
             empty(),
             empty(),
@@ -56,7 +56,7 @@ fn test_pair_two_cards() {
         g.state.opponent.pairs,
         vec![pair(
             vec![
-                card(Value::Two, Suit::Spades),
+                card(Value::Two, Suit::Hearts),
                 card(Value::Two, Suit::Diamonds),
             ],
             Value::Two,
@@ -76,7 +76,7 @@ fn test_discard_from_hand() {
         [
             single(Value::Four, Suit::Clubs),
             single(Value::Seven, Suit::Diamonds),
-            single(Value::Two, Suit::Spades),
+            single(Value::Two, Suit::Hearts),
             single(Value::Eight, Suit::Clubs),
             single(Value::Ace, Suit::Hearts), // empty(),
             empty(),
@@ -125,7 +125,7 @@ fn test_build_and_group() {
         read_floor(&g),
         vec![
             single(Value::Four, Suit::Clubs),
-            single(Value::Two, Suit::Spades),
+            single(Value::Two, Suit::Hearts),
             group(
                 vec![
                     card(Value::Eight, Suit::Clubs),
@@ -514,7 +514,7 @@ fn test_first_round() {
         vec![
             single(Value::Jack, Suit::Hearts), // single(Value::Four, Suit::Clubs),
             empty(),                           // single(Value::Seven, Suit::Diamonds),
-            empty(),                           // single(Value::Two, Suit::Spades),
+            empty(),                           // single(Value::Two, Suit::Hearts),
             empty(),                           // single(Value::Eight, Suit::Clubs),
             empty(),
             empty(),
@@ -597,7 +597,7 @@ fn test_first_round() {
             pair(
                 vec![
                     card(Value::Four, Suit::Clubs),
-                    card(Value::Two, Suit::Spades),
+                    card(Value::Two, Suit::Hearts),
                     card(Value::Six, Suit::Spades),
                 ],
                 Value::Six,
@@ -1042,9 +1042,9 @@ fn test_mid_game_scoring() {
     // Player | Aces | Most Cards | Most Spades | 10♦ | 2♠ | Suipis | Total
     // ------ | ---- | ---------- | ----------- | --- | -- | ------ | -----
     // Opp    |    1 |          3 |           0 |   0 |  0 |      1 |  5
-    // Dealer |    1 |          0 |           1 |   0 |  1 |      0 |  3
+    // Dealer |    1 |          0 |           0 |   0 |  0 |      0 |  1
     assert_eq!(get_scores(&g)[0], scorecard(1, 3, 0, 0, 0, 1, 5));
-    assert_eq!(get_scores(&g)[1], scorecard(1, 0, 1, 0, 1, 0, 3));
+    assert_eq!(get_scores(&g)[1], scorecard(1, 0, 0, 0, 0, 0, 1));
     assert_eq!(get_scores(&g)[2], blank_scorecard());
     assert_eq!(get_scores(&g)[3], blank_scorecard());
 }
